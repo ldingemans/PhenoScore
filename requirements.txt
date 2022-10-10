@@ -1,0 +1,14 @@
+tensorflow==2.10.0
+numpy==1.23.0
+pandas==1.5.0
+tqdm==4.64.1
+deepface==0.0.75
+scikit-learn==1.1.2
+obonet==0.3.0
+phenopy==0.5.3
+openpyxl==3.0.10
+seaborn==0.12.0
+scipy==1.9.1
+networkx~=2.8.7
+matplotlib~=3.6.1
+git+https://github.com/ldingemans/lime.git
