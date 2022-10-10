@@ -3,9 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib as matplotlib
-import seaborn as sns
 from PIL import Image, ImageDraw
-from phenoscore.explainability_lime.LIME import get_norm_image
 #Table and figure module with all corresponding functions
 
 
