@@ -8,7 +8,10 @@ import ast
 
 class SimScorerTester(unittest.TestCase):
     def setUp(self):
-        random_data_csv = pd.read_excel(os.path.join('..', 'sample_data', 'random_generated_sample_data.xlsx'))
+        try:
+            random_data_csv = pd.read_excel(os.path.join('phenoscore', 'sample_data', 'random_generated_sample_data.xlsx'))
+        except:
+            random_data_csv = pd.read_excel(os.path.join('..', 'sample_data', 'random_generated_sample_data.xlsx'))
         hpo_ids = []
         for i in range(len(random_data_csv)):
             hpo_ids.append(ast.literal_eval(random_data_csv.loc[i, 'hpo_all']))
