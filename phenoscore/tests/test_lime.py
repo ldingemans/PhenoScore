@@ -1,5 +1,5 @@
 import unittest
-from phenoscore.phenoscore import PhenoScorer
+from phenoscore.phenoscorer import PhenoScorer
 import os
 
 

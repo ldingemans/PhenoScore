@@ -3,7 +3,7 @@ import numpy as np
 from random import shuffle
 from phenoscore.hpo_phenotype.calc_hpo_sim import SimScorer
 from phenoscore.permutationtest.permutation_test import PermutationTester
-from phenoscore.phenoscore import PhenoScorer
+from phenoscore.phenoscorer import PhenoScorer
 import os
 # these are both and technical tests in one, although it will sometime fail (so might remove them)
 # as p can occasionally be < 0.05 by random chance with the random tests
