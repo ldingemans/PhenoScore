@@ -4,7 +4,7 @@ from sklearn.preprocessing import normalize, StandardScaler
 from sklearn.metrics import roc_auc_score, brier_score_loss
 import pandas as pd
 from ..models.svm import get_loss, svm_class
-from ...explainability_lime.LIME import explain_prediction
+from ..explainability_lime.LIME import explain_prediction
 
 
 class CrossValidatorAndLIME:
