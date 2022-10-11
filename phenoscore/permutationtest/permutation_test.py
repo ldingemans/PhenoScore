@@ -1,5 +1,5 @@
 import sys
-from phenoscore.models.svm import get_loss
+from ..models.svm import get_loss
 from scipy import stats
 from scipy.stats import mannwhitneyu
 import numpy as np
