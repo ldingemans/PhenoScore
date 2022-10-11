@@ -7,12 +7,12 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import seaborn as sns
-from hpo_phenotype.calc_hpo_sim import SimScorer
-from permutationtest.permutation_test import PermutationTester
-from permutationtest.cross_validation import CrossValidatorAndLIME
-from tables_and_figures.gen_tables_and_figs import get_top_HPO, get_heatmap_from_multiple
-from explainability_lime.LIME import get_norm_image, explain_prediction
-from models.svm import get_clf
+from phenoscore.hpo_phenotype.calc_hpo_sim import SimScorer
+from phenoscore.permutationtest.permutation_test import PermutationTester
+from phenoscore.permutationtest.cross_validation import CrossValidatorAndLIME
+from phenoscore.tables_and_figures.gen_tables_and_figs import get_top_HPO, get_heatmap_from_multiple
+from phenoscore.explainability_lime.LIME import get_norm_image, explain_prediction
+from phenoscore.models.svm import get_clf
 from sklearn.preprocessing import normalize
 
 
