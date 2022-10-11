@@ -35,5 +35,5 @@ class SimScorerTester(unittest.TestCase):
         try:
             result_csv = pd.read_csv('sim_mat_random_data.csv')
         except:
-            result_csv = pd.read_csv(os.path.join('phenoscore', 'sample_data', 'sim_mat_random_data.csv'))
+            result_csv = pd.read_csv(os.path.join('phenoscore', 'tests', 'sim_mat_random_data.csv'))
         np.testing.assert_array_almost_equal(result_csv, sim_mat, decimal=0)
