@@ -11,14 +11,9 @@ Then, activate the environment
 
 `conda activate PhenoScore`
 
-Install the needed dependencies:
+Install the needed dependencies using the requirements file:
 
-`pip install numpy pandas tqdm tensorflow==2.5 deepface sklearn obonet phenopy openpyxl seaborn`
-
-For the LIME library, we need some special (minor) modifications, so install it from my repository:
-
-`git clone https://github.com/ldingemans/lime.git
-pip install lime/.`
+`pip install -r requirements.txt`
 
 Finally, download `phenotype.hpoa` from the HPO website or github (for instance from `https://github.com/obophenotype/human-phenotype-ontology/releases/download/v2022-06-11/phenotype.hpoa`) and place it in the root.
 
@@ -29,13 +24,13 @@ To use the GPU (about a 10x performance increase when doing the LIME predictions
 
 # Running PhenoScore
 
-To run the basic example analysis (looking at the two subgroups in _SATB1_ and some randomly generated data, just run
+To run the basic example analysis (looking at the two subgroups in _SATB1_), just run
 
 `python3 run_analysis.py`
 
 after installing PhenoScore. The permutation test will be performed and corresponding LIME images generated.
-Running PhenoScore on your own data is then easy: just replace the _SATB1_ data in the sample_data directory (or change the loading of `df_data` in `run_analysis`).
+Running PhenoScore on your own data is then easy: just point the PhenoScorer class to your own excel file with a similar data structure (same columns as `random_generated_sample_data.xlsx` and `satb1_data.xlsxs`.)
 
 It is possible to run PhenoScore using three different sources of data: facial images, clinical features in HPO or both.
-This can be set using the `PHENOSCORE_MODE` variable to either `face`, `hpo` or `both`.
+This can be set using the `mode` variable of the PhenoScore class to either `face`, `hpo` or `both`.
 
