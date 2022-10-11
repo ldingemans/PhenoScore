@@ -39,7 +39,12 @@ class SimScorerTester(unittest.TestCase):
         assert permutation_tester.p_value > 0.05
 
     def test_satb1_data(self):
-        X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("..", "sample_data", "satb1_data.xlsx"))
+        try:
+            X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("..", "sample_data",
+                                                                                           "satb1_data.xlsx"))
+        except:
+            X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("phenoscore", "sample_data",
+                                                                                           "satb1_data.xlsx"))
         permutation_tester = PermutationTester(self._simscorer, mode=self._phenoscorer.mode, bootstraps=1000)
         permutation_tester.permutation_test(X, y)
         print("Brier:" + str(np.mean(permutation_tester.classifier_results)));
@@ -48,7 +53,12 @@ class SimScorerTester(unittest.TestCase):
         assert permutation_tester.p_value < 0.05
 
     def test_random_data(self):
-        X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("..", "sample_data", "random_generated_sample_data.xlsx"))
+        try:
+            X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("..", "sample_data",
+                                                                                       "random_generated_sample_data.xlsx"))
+        except:
+            X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("phenoscore", "sample_data",
+                                                                                           "random_generated_sample_data.xlsx"))
         permutation_tester = PermutationTester(self._simscorer, mode=self._phenoscorer.mode, bootstraps=1000)
         permutation_tester.permutation_test(X, y)
         print("Brier:" + str(np.mean(permutation_tester.classifier_results)));

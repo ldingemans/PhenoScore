@@ -12,7 +12,11 @@ class CrossValLIMETester(unittest.TestCase):
                                         method_summ_hpo_similarities='BMA')
 
     def test_lime_gen(self):
-        X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("..", "sample_data",
+        try:
+            X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("..", "sample_data",
+                                                                                       "satb1_data.xlsx"))
+        except:
+            X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("phenoscore", "sample_data",
                                                                                        "satb1_data.xlsx"))
         self._phenoscorer.get_lime(X, y, img_paths, n_lime=5)
         self._phenoscorer.gen_lime_and_results_figure(bg_image=os.path.join("..", "sample_data",
