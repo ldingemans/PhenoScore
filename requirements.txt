@@ -5,7 +5,6 @@ tqdm==4.64.1
 deepface==0.0.75
 scikit-learn==1.1.2
 obonet==0.3.0
-phenopy @ git+https://github.com/ldingemans/phenopy.git@bf9fef9fd7ec4837958341902451cc76c7102619
 openpyxl==3.0.10
 seaborn==0.12.0
 scipy==1.9.1
@@ -14,3 +13,4 @@ matplotlib~=3.6.1
 lime @ git+https://github.com/ldingemans/lime.git@3365ccee00664263d3be903f7a34fa49676a8f42
 setuptools~=63.4.1
 pillow~=9.2.0
+phenopy @ git+https://github.com/ldingemans/phenopy.git@bf9fef9fd7ec4837958341902451cc76c7102619
