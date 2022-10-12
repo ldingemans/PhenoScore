@@ -3,7 +3,7 @@ from sklearn.model_selection import StratifiedKFold, LeaveOneOut
 from sklearn.preprocessing import normalize, StandardScaler
 
 
-def get_clf(X, y, simscorer):
+def get_clf(X, y, simscorer, mode):
     """
     Train a classifier while retaining the original scaler and features of the input data, so it can be used in LIME explanations later.
 
@@ -15,6 +15,9 @@ def get_clf(X, y, simscorer):
         The labels (usually 0 for control and 1 for patient)
     simscorer: object of SimScorer class
         Instance of class for semantic similarity calculations
+    mode: str
+        Whether to use facial features, HPO data, or both
+
     Returns
     -------
     clf: sklearn instance
@@ -37,34 +40,42 @@ def get_clf(X, y, simscorer):
 
     """
     X_processed = X[:, :]
+    if mode != 'face':
+        hpo_terms_pt = X[y == 1, -1]
+        hpo_terms_cont = X[y == 0, -1]
 
-    hpo_terms_pt = X[y == 1, -1]
-    hpo_terms_cont = X[y == 0, -1]
+        sim_mat = simscorer.calc_full_sim_mat(X)
 
-    sim_mat = simscorer.calc_full_sim_mat(X)
+        sim_avg_pat = sim_mat[:, y == 1].mean(axis=1).reshape(-1, 1)
+        sim_avg_control = sim_mat[:, y == 0].mean(axis=1).reshape(-1, 1)
 
-    sim_avg_pat = sim_mat[:, y == 1].mean(axis=1).reshape(-1, 1)
-    sim_avg_control = sim_mat[:, y == 0].mean(axis=1).reshape(-1, 1)
+        hpo_features = np.append(sim_avg_pat, sim_avg_control, axis=1)
+        scale_hpo = StandardScaler()
+        hpo_features = scale_hpo.fit_transform(hpo_features)
+        preds, clf_hpo = svm_class(hpo_features, y, hpo_features)
+    else:
+        scale_hpo, hpo_terms_pt, hpo_terms_cont, clf_hpo = None, None, None, None
 
-    hpo_features = np.append(sim_avg_pat, sim_avg_control, axis=1)
-    face_features = np.array(X[:, :2622], dtype=float)
+    if mode != 'hpo':
+        face_features = np.array(X[:, :2622], dtype=float)
 
-    scale_face = StandardScaler()
-    face_features = normalize(scale_face.fit_transform(face_features))
+        scale_face = StandardScaler()
+        face_features = normalize(scale_face.fit_transform(face_features))
 
-    preds, clf_face = svm_class(face_features, y, face_features)
+        preds, clf_face = svm_class(face_features, y, face_features)
 
-    vgg_face_pt = face_features[y == 1, :]
-    vgg_face_cont = face_features[y == 0, :]
+        vgg_face_pt = face_features[y == 1, :]
+        vgg_face_cont = face_features[y == 0, :]
+    else:
+        scale_face, vgg_face_pt, vgg_face_cont, clf_face = None, None, None, None
 
-    scale_hpo = StandardScaler()
-    hpo_features = scale_hpo.fit_transform(hpo_features)
-
-    preds, clf_hpo = svm_class(hpo_features, y, hpo_features)
-
-    X = np.append(face_features, hpo_features, axis=1)
-
-    preds, clf = svm_class(X, y, X)
+    if mode == 'face':
+        clf = clf_face
+    elif mode == 'hpo':
+        clf = clf_hpo
+    elif mode == 'both':
+        X = np.append(face_features, hpo_features, axis=1)
+        preds, clf = svm_class(X, y, X)
     return clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X_processed, \
            clf_face, clf_hpo
 
