@@ -245,31 +245,43 @@ class PhenoScorer:
         local_pred_hpos: list
             LIME prediction for this instance
         """
-        clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = get_clf(
-            original_X, original_y, self._simscorer)
-        filtered_hpo = self._simscorer.filter_hpo_df(hpo_all_new_sample)
+        clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = \
+            get_clf(original_X, original_y, self._simscorer, self.mode)
 
-        assert len(hpo_terms_pt) == len(hpo_terms_cont)
+        if self.mode != 'face':
+            filtered_hpo = self._simscorer.filter_hpo_df(hpo_all_new_sample)
 
-        avg_pt, avg_cont = [], []
+            assert len(hpo_terms_pt) == len(hpo_terms_cont)
 
-        for i in range(len(hpo_terms_pt)):
-            avg_pt.append(self._simscorer.calc_similarity(filtered_hpo, hpo_terms_pt[i]))
-            avg_cont.append(self._simscorer.calc_similarity(filtered_hpo, hpo_terms_cont[i]))
+            avg_pt, avg_cont = [], []
 
-        hpo_features = np.array([[np.mean(avg_pt), np.mean(avg_cont)]])
-        face_features = np.array(DeepFace.represent(img, model_name='VGG-Face', detector_backend='mtcnn')).reshape(1,
-                                                                                                                   -1)
+            for i in range(len(hpo_terms_pt)):
+                avg_pt.append(self._simscorer.calc_similarity(filtered_hpo, hpo_terms_pt[i]))
+                avg_cont.append(self._simscorer.calc_similarity(filtered_hpo, hpo_terms_cont[i]))
 
-        X_lime = np.append(X, np.append(face_features, np.zeros((1, 1)), axis=1), axis=0)
-        X_lime[len(X_lime) - 1, -1] = hpo_all_new_sample
+            hpo_features = np.array([[np.mean(avg_pt), np.mean(avg_cont)]])
+            hpo_features = scale_hpo.transform(hpo_features)
+            preds_hpo = clf_hpo.predict_proba(hpo_features)[:, 1]
 
-        face_features = normalize(scale_face.transform(face_features))
-        hpo_features = scale_hpo.transform(hpo_features)
+        if self.mode != 'hpo':
+            face_features = np.array(DeepFace.represent(img, model_name='VGG-Face', detector_backend='mtcnn')).reshape(1, -1)
+            face_features = normalize(scale_face.transform(face_features))
+            preds_face = clf_face.predict_proba(face_features)[:, 1]
 
-        preds_face = clf_face.predict_proba(face_features)[:, 1]
-        preds_hpo = clf_hpo.predict_proba(hpo_features)[:, 1]
-        preds_both = clf.predict_proba(np.append(face_features, hpo_features, axis=1))[:, 1]
+        if self.mode == 'face':
+            X_lime = np.append(X[:, :2622], face_features, axis=0)
+            clf = clf_face
+            preds_both, preds_hpo = None, None
+        elif self.mode == 'hpo':
+            X_lime = np.append(X[:, -1].reshape(-1, 1), np.zeros((1, 1)), axis=0)
+            X_lime[len(X_lime) - 1, -1] = hpo_all_new_sample
+            clf = clf_hpo
+            preds_both, preds_face = None, None
+        elif self.mode == 'both':
+            X_lime = np.append(X, np.append(face_features, np.zeros((1, 1)), axis=1), axis=0)
+            X_lime[len(X_lime) - 1, -1] = hpo_all_new_sample
+
+            preds_both = clf.predict_proba(np.append(face_features, hpo_features, axis=1))[:, 1]
 
         exp_face, local_pred_face, exp_hpo, local_pred_hpo = explain_prediction(X_lime, len(X_lime) - 1, clf,
                                                                                 scale_face, scale_hpo, hpo_terms_pt,
