@@ -113,11 +113,13 @@ class SimScorer:
         temp_dict = {v: k for k, v in name_to_id.items()}
         name_to_id_and_reverse = {**name_to_id, **temp_dict}
 
-        for id_, data in hpo_network.nodes(data=True):
+        for id_, data in full_hpo_graph.nodes(data=True):
             if 'synonyms' in data:
                 for syn in data.get('synonyms'):
                     name_to_id_and_reverse[syn] = id_
-                    name_to_id_and_reverse[id_] = syn
+            if 'alt_id' in data:
+                for alt in data['alt_id']:
+                    name_to_id_and_reverse[alt] = data['name']
 
         scorer = Scorer(hpo_network)
         scorer.scoring_method = scoring_method
