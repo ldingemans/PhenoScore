@@ -1,5 +1,5 @@
 import os
-from phenoscore.phenoscore import PhenoScorer
+from phenoscore.phenoscorer import PhenoScorer
 
 if __name__ == '__main__':
         phenoscorer = PhenoScorer(gene_name='SATB1', mode='both', method_hpo_similarity='Resnik', method_summ_hpo_similarities='BMA')
