@@ -13,4 +13,4 @@ matplotlib~=3.6.1
 lime @ git+https://github.com/ldingemans/lime.git@3365ccee00664263d3be903f7a34fa49676a8f42
 setuptools~=63.4.1
 pillow~=9.2.0
-phenopy @ git+https://github.com/ldingemans/phenopy.git@bf9fef9fd7ec4837958341902451cc76c7102619
+phenopy @ git+https://github.com/ldingemans/phenopy.git@6dd7aa7644d8dd504b367a8e11810889947421d0
