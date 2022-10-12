@@ -15,8 +15,6 @@ Install the needed dependencies using the requirements file:
 
 `pip install -r requirements.txt`
 
-Finally, download `phenotype.hpoa` from the HPO website or github (for instance from `https://github.com/obophenotype/human-phenotype-ontology/releases/download/v2022-06-11/phenotype.hpoa`) and place it in the root.
-
 ## Optional:
 To use the GPU (about a 10x performance increase when doing the LIME predictions) when CUDA is installed:
 
