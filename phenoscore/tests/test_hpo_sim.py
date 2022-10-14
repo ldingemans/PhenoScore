@@ -37,3 +37,11 @@ class SimScorerTester(unittest.TestCase):
         except:
             result_csv = pd.read_csv(os.path.join('phenoscore', 'tests', 'sim_mat_random_data.csv'))
         np.testing.assert_array_almost_equal(result_csv, sim_mat, decimal=0)
+
+    def test_filter_hpo_df(self):
+        hpos = pd.DataFrame()
+        hpos['hpo_all'] = ''
+        hpos.at[0,'hpo_all'] = ['HP:0011927', 'HP:0000708', 'HP:0000709', 'HP:0008771', 'HP:0001250']
+        filtered_hpo = self.filter_hpo_df(hpos)
+        assert filtered_hpo.loc[0, 'hpo_all'] == ['HP:0001250']
+

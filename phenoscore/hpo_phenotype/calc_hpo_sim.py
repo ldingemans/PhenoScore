@@ -257,7 +257,7 @@ class SimScorer:
         exclude = []
 
         for hpo in parents_to_exclude:
-            for child_node in nx.algorithms.dag.ancestors(self.hpo_network, hpo):
+            for child_node in nx.algorithms.dag.descendants(self.hpo_network, hpo):
                 exclude.append(child_node)
             exclude.append(hpo)
 
