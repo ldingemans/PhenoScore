@@ -192,6 +192,5 @@ class CrossValidatorAndLIME:
         df_results = pd.DataFrame(results).T
         df_results.columns = ['roc_face_svm', 'brier_face_svm', 'roc_hpo_svm', 'brier_hpo_svm', 'roc_both_svm',
                               'brier_both_svm', 'face_explanation', 'hpo_explanation', 'face_pred', 'hpo_pred',
-                              'svm_preds',
-                              'y_real', 'file_paths']
+                              'svm_preds', 'y_real', 'file_paths']
         return df_results
