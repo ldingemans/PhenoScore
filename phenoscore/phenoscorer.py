@@ -237,7 +237,8 @@ class PhenoScorer:
                     axs[1].text(0.28, y, str(int(np.round(df_summ_hpo.loc[y, 'prev_1'] * 100))) + '%', fontsize=12,
                                 horizontalalignment='right', verticalalignment='center')
 
-        fig.suptitle('PhenoScore: ' + str(score_aroc_both), fontsize=20, fontweight='bold')
+        fig.suptitle('PhenoScore: ' + str(score_aroc_both), fontsize=20, fontweight='bold', horizontalalignment='center', x=0.53)
+        plt.subplots_adjust(top=0.77)
         fig.savefig(filename, dpi=300, bbox_inches='tight')
         print("Figure saved as " + filename)
         plt.show()
