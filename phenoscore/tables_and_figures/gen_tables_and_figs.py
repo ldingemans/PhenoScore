@@ -77,7 +77,9 @@ def get_top_HPO(list_of_hpo_terms, invert_negative_correlations):
     list_of_hpo_terms: list
         List of all generated HPO LIME explanations
     invert_negative_correlations: bool
-        Whether to invert the negative correlations (i.e. if something is strongly negatively correlated with class 1, it points to class 0). Not usefull when investigating individual explanations, but for larger groups (genetic syndromes), it provides more information
+        Whether to invert the negative correlations (i.e. if something is strongly negatively correlated with class 1,
+         it points to class 0). Not useful when investigating individual explanations, but for larger groups (genetic syndromes),
+         it provides more information
     Returns
     -------
     df_summ_hpo: pandas DataFrame
@@ -96,14 +98,17 @@ def get_top_HPO(list_of_hpo_terms, invert_negative_correlations):
         df_exp_total.loc[df_exp_total['positive'] == '0', 'corr'] = -df_exp_total.loc[df_exp_total['positive'] == '0', 'corr']
     df_exp_total['positive'] = df_exp_total['positive'].astype(int)
     
-    if len(list_of_hpo_terms) == 5:
-        #only take into account HPO terms that are present in at least 3 of the 5 predictions, if there are 5 predictions, otherwise just take them all
-        df_exp_total = df_exp_total[df_exp_total.groupby("hpo")['hpo'].transform('size') > 2]
+    if len(list_of_hpo_terms) > 4:
+        #only take into account HPO terms that are present in at least 3 / 5 predictions, if there are at least 5
+        # predictions, otherwise just take them all
+        threshold = int(np.round(len(list_of_hpo_terms) * 0.6))
+
+        df_exp_total = df_exp_total[df_exp_total.groupby("hpo")['hpo'].transform('size') > (threshold - 1)]
     
     df_summ_hpo = df_exp_total.groupby('hpo').mean()
     df_summ_hpo['hpo'] = list(df_summ_hpo.index)
     
-    #if there are more then 10 important features, select the 10 with highest correlations
+    # if there are more than 10 important features, select the 10 with highest correlations
     df_summ_hpo = df_summ_hpo[df_summ_hpo['hpo'].isin(np.array(abs(df_summ_hpo['corr']).nlargest(10).index))]
     return df_summ_hpo
 
@@ -148,7 +153,7 @@ def get_heatmap_from_multiple(list_of_heatmaps, fig, ax, bg_image, alpha):
     mean_face = add_corners(bg_image, 50, min_heatmap)
     
     sm = ax.imshow(heatmap, cmap = 'seismic_r',  vmin  = -max_heatmap, vmax = max_heatmap)
-    fig.colorbar(sm, ax=ax,fraction=0.046, pad=0.04)
+    #fig.colorbar(sm, ax=ax,fraction=0.046, pad=0.04)
     ax.imshow(mean_face, alpha=alpha)
     ax.axes.xaxis.set_visible(False)
     ax.set_yticks([])
