@@ -244,7 +244,7 @@ class PhenoScorer:
         plt.show()
         return
 
-    def predict_new_sample(self, original_X, original_y, img, hpo_all_new_sample):
+    def predict_new_sample(self, original_X, original_y, img, hpo_all_new_sample, lime_iter=100):
         """
         Train a classifier, get prediction for a new sample (a VUS for instance) and obtain LIME explanations
 
@@ -259,6 +259,8 @@ class PhenoScorer:
             Path to image of new sample
         hpo_all_new_sample: list
             List of HPO IDs of new sample
+        lime_iter: int
+            Number of LIME iterations for the generation of facial heatmaps
 
         Returns
         -------
@@ -316,7 +318,7 @@ class PhenoScorer:
                                                                                 hpo_terms_cont,
                                                                                 self._simscorer,
                                                                                 self._simscorer.name_to_id_and_reverse,
-                                                                                img, n_iter=100)
+                                                                                img, n_iter=lime_iter)
         self.vus_results = [preds_both, preds_hpo, preds_face, exp_face, exp_hpo, img]
         return self
 
