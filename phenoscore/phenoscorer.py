@@ -188,8 +188,8 @@ class PhenoScorer:
             axs[1].set_title('HPO: ' + str(score_aroc_hpo), fontsize=18, fontweight='bold')
 
             df_summ_hpo = df_summ_hpo.sort_values('corr', ascending=False)
-            df_summ_hpo = df_summ_hpo.loc[df_summ_hpo['corr'] > 0, :] # only use positive correlations for this plot
             if bubble_plot == True:
+                df_summ_hpo = df_summ_hpo.loc[df_summ_hpo['corr'] > 0, :] # only use positive correlations for this plot
                 x = [0] * len(df_summ_hpo)
                 y = np.flip(range(len(df_summ_hpo)))
                 axs[1].scatter(x, y, alpha=0.5, s=df_summ_hpo['corr'].to_numpy() * 30000)
