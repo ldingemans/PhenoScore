@@ -1,7 +1,4 @@
 name: CI
-##
-# Add the line below to README.md and the badge will come alive when the repo is public.
-# [![CI](https://github.com/monarch-initiative/C2S2/workflows/CI/badge.svg)](https://github.com/monarch-initiative/C2S2/actions/workflows/python_ci.yml)
 
 on:
     push:
