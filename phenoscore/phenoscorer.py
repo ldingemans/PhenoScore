@@ -182,14 +182,19 @@ class PhenoScorer:
 
         mpl.rcParams['pdf.fonttype'] = 42
         mpl.rcParams['ps.fonttype'] = 42
-        mean_face_norm = self._facial_feature_extractor.get_norm_image(bg_image)
+        if self.mode == 'face' or self.mode == 'both':
+            mean_face_norm = self._facial_feature_extractor.get_norm_image(bg_image)
 
         score_aroc_both = np.round(self.lime_results.loc[0, 'roc_both_svm'], 2)
         score_aroc_face = np.round(self.lime_results.loc[0, 'roc_face_svm'], 2)
         score_aroc_hpo = np.round(self.lime_results.loc[0, 'roc_hpo_svm'], 2)
 
-        fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-        axs = axs.flatten()
+        if self.mode == 'both':
+            fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+            axs = axs.flatten()
+        else:
+            fig, axs = plt.subplots(1, 1, figsize=(6, 5))
+            axs = np.array([axs])
 
         df_exp = pd.DataFrame()
         df_exp['hpo_pred'] = np.array(self.lime_results.loc[0, 'hpo_pred'])
@@ -202,15 +207,15 @@ class PhenoScorer:
         df_exp['face_exp'] = np.array(self.lime_results.loc[0, 'face_explanation'])
         df_exp['y_true'] = np.array(self.lime_results.loc[0, 'y_real'])
 
-        if self.mode != 'hpo':
+        if self.mode == 'face' or self.mode == 'both':
             df_top = df_exp[df_exp['face_exp'] != ''].reset_index(drop=True)
         else:
             df_top = df_exp[df_exp['hpo_exp'] != ''].reset_index(drop=True)
 
-        if self.mode != 'face':
+        if self.mode == 'hpo' or self.mode == 'both':
             df_summ_hpo = get_top_HPO(df_top.loc[:, 'hpo_exp'].explode(), True)
 
-        if self.mode != 'hpo':
+        if self.mode == 'face' or self.mode == 'both':
             fig = get_heatmap_from_multiple(df_top.loc[:, 'face_exp'].explode(), fig, axs[0], mean_face_norm, 0.5, self._facial_feature_extractor.input_image_size)
             axs[0].set_title('Face: ' + str(score_aroc_face), fontsize=18, fontweight='bold')
             axs[0].set_ylabel(self.gene_name, fontsize=18, fontweight='bold', style='italic')
@@ -221,15 +226,15 @@ class PhenoScorer:
                             annotation_clip=False,
                             fontsize=16, fontweight='bold')
 
-        if self.mode != 'face':
-            axs[1].set_title('HPO: ' + str(score_aroc_hpo), fontsize=18, fontweight='bold')
+        if self.mode == 'hpo' or self.mode == 'both':
+            axs[len(axs) - 1].set_title('HPO: ' + str(score_aroc_hpo), fontsize=18, fontweight='bold')
 
             df_summ_hpo = df_summ_hpo.sort_values('corr', ascending=False)
             if bubble_plot == True:
                 df_summ_hpo = df_summ_hpo.loc[df_summ_hpo['corr'] > 0, :] # only use positive correlations for this plot
                 x = [0] * len(df_summ_hpo)
                 y = np.flip(range(len(df_summ_hpo)))
-                axs[1].scatter(x, y, alpha=0.5, s=df_summ_hpo['corr'].to_numpy() * 30000)
+                axs[len(axs) - 1].scatter(x, y, alpha=0.5, s=df_summ_hpo['corr'].to_numpy() * 30000)
                 for i, txt in enumerate(list(df_summ_hpo.index)):
                     txt = txt.replace(' greater than ', ' > ')
                     txt = txt.replace(' less than ', ' < ')
@@ -241,11 +246,11 @@ class PhenoScorer:
                         txt = 'Birth length >\n 97th percentile'
                     if txt == 'Gastrostomy tube feeding in infancy':
                         txt = 'Gastrostomy tube feeding\nin infancy'
-                    axs[1].annotate(txt, (x[i] + 0.12, y[i]), verticalalignment="center",
+                    axs[len(axs) - 1].annotate(txt, (x[i] + 0.12, y[i]), verticalalignment="center",
                                            horizontalalignment="left", fontsize=16, fontweight='semibold')
-                axs[1].set_xlim(-0.2, 0.5)
-                axs[1].set_ylim(-2, 6)
-                axs[1].set_axis_off()
+                axs[len(axs) - 1].set_xlim(-0.2, 0.5)
+                axs[len(axs) - 1].set_ylim(-2, 6)
+                axs[len(axs) - 1].set_axis_off()
             else:
                 for hpo_term in df_summ_hpo['hpo']:
                     df_summ_hpo.loc[hpo_term, 'prev_0'] = df_data.loc[
@@ -253,28 +258,28 @@ class PhenoScorer:
                     df_summ_hpo.loc[hpo_term, 'prev_1'] = df_data.loc[
                         df_data['y_label'] == 1, 'hpo_name_inc_parents'].astype(str).str.contains(hpo_term).mean()
 
-                g = sns.barplot(x=df_summ_hpo['corr'], y=list(df_summ_hpo.index), color='blue', alpha=0.6, ax=axs[1])
+                g = sns.barplot(x=df_summ_hpo['corr'], y=list(df_summ_hpo.index), color='blue', alpha=0.6, ax=axs[len(axs) - 1])
 
                 for bar in g.patches:
                     if bar.get_width() < 0:
                         bar.set_color('red')
-                axs[1].set_xlim(-0.25, 0.25)
-                axs[1].set_yticks([])
-                axs[1].axes.yaxis.set_visible(False)
-                axs[1].spines['left'].set_visible(False)
-                axs[1].spines['right'].set_visible(False)
-                axs[1].spines['top'].set_visible(False)
-                axs[1].set_xlabel('LIME regression coefficient')
+                axs[len(axs) - 1].set_xlim(-0.25, 0.25)
+                axs[len(axs) - 1].set_yticks([])
+                axs[len(axs) - 1].axes.yaxis.set_visible(False)
+                axs[len(axs) - 1].spines['left'].set_visible(False)
+                axs[len(axs) - 1].spines['right'].set_visible(False)
+                axs[len(axs) - 1].spines['top'].set_visible(False)
+                axs[len(axs) - 1].set_xlabel('LIME regression coefficient')
                 df_summ_hpo = df_summ_hpo.reset_index(drop=True)
                 for y in range(len(df_summ_hpo)):
-                    axs[1].text(0, y, df_summ_hpo.loc[y, 'hpo'], fontsize=12, horizontalalignment='center',
+                    axs[len(axs) - 1].text(0, y, df_summ_hpo.loc[y, 'hpo'], fontsize=12, horizontalalignment='center',
                                 verticalalignment='center', fontweight='semibold')
-                    axs[1].text(-0.28, y, str(int(np.round(df_summ_hpo.loc[y, 'prev_0'] * 100))) + '%', fontsize=12,
+                    axs[len(axs) - 1].text(-0.28, y, str(int(np.round(df_summ_hpo.loc[y, 'prev_0'] * 100))) + '%', fontsize=12,
                                 horizontalalignment='left', verticalalignment='center')
-                    axs[1].text(0.28, y, str(int(np.round(df_summ_hpo.loc[y, 'prev_1'] * 100))) + '%', fontsize=12,
+                    axs[len(axs) - 1].text(0.28, y, str(int(np.round(df_summ_hpo.loc[y, 'prev_1'] * 100))) + '%', fontsize=12,
                                 horizontalalignment='right', verticalalignment='center')
-
-        fig.suptitle('PhenoScore: ' + str(score_aroc_both), fontsize=20, fontweight='bold', horizontalalignment='center', x=0.53)
+        if self.mode == 'both':
+            fig.suptitle('PhenoScore: ' + str(score_aroc_both), fontsize=20, fontweight='bold', horizontalalignment='center', x=0.53)
         plt.subplots_adjust(top=0.77)
         fig.savefig(filename, dpi=300, bbox_inches='tight')
         print("Figure saved as " + filename)
