@@ -25,5 +25,5 @@ class FacialFeatureExtractionTester(unittest.TestCase):
 
     def test_negative_output(self):
         random_img = (np.random.standard_normal([28, 28, 3]) * 255).astype(np.uint8)
-        assert(self._qmagface.process_file(random_img) is None)
-        # assert(self._vggface.process_file(random_img) is None)
+        # assert(self._qmagface.process_file(random_img) is None)
+        assert(self._vggface.process_file(random_img) is None)
