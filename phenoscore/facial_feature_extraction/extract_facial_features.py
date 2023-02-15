@@ -3,9 +3,9 @@ import os
 from deepface.DeepFace import build_model
 from deepface.commons import functions
 import sys
-from phenoscore.facial_feature_extraction.QMagFace.preprocessing.insightface.src.mtcnn_detector import MtcnnDetector
-from phenoscore.facial_feature_extraction.QMagFace.preprocessing.align import preprocess
-from phenoscore.facial_feature_extraction.QMagFace.preprocessing.magface.network_inf import builder_inf
+from ..facial_feature_extraction.QMagFace.preprocessing.insightface.src.mtcnn_detector import MtcnnDetector
+from ..facial_feature_extraction.QMagFace.preprocessing.align import preprocess
+from ..facial_feature_extraction.QMagFace.preprocessing.magface.network_inf import builder_inf
 import numpy as np
 import cv2
 import torch
