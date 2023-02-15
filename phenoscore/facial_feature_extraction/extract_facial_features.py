@@ -14,7 +14,7 @@ import torchvision.transforms
 from collections import namedtuple
 import io
 import tensorflow as tf
-
+import urllib.request
 
 class FacialFeatureExtractor:
     def __init__(self):
@@ -119,8 +119,29 @@ class QMagFaceExtractor(FacialFeatureExtractor):
             threshold=[0.6, 0.7, 0.8]
         )
         Args = namedtuple('Args', ['arch', 'resume', 'embedding_size', 'cpu_mode'])
-        args = Args('iresnet100', os.path.join(self._path_to_dir, 'QMagFace', '_models', 'magface_models', 'magface_epoch_00025.pth'), 512,
-                    self._use_cpu)
+        path_pretrained_weights = os.path.join(self._path_to_dir, 'QMagFace', '_models', 'magface_models', 'magface_epoch_00025.pth')
+        args = Args('iresnet100', path_pretrained_weights, 512, self._use_cpu)
+
+        # Check if the file already exists locally
+        if os.path.isfile(path_pretrained_weights):
+            print("Pretrained weights already exist, skipping download.")
+        else:
+            # Send a GET request to download the file
+            print("Pretrained weights not yet available, downloading them now.")
+            file_url = 'https://cdn-115.anonfiles.com/Qaf5r8Y1yb/db1e9cb8-1676483146/magface_epoch_00025.pth'
+            dirname = os.path.dirname(path_pretrained_weights)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+
+            def show_progress(block_num, block_size, total_size):
+                x = int(100 * (block_num * block_size / total_size))
+                print(f"Downloading weights :[{u'█' * x}{('.' * (100 - x))}] {(block_num * block_size)}/{total_size}",
+                      end='\r', flush=True)
+                # print(round(block_num * block_size / total_size * 100, 2), end="\r")
+
+            urllib.request.urlretrieve(file_url, path_pretrained_weights, show_progress)
+            print("Downloaded pretrained weights.")
+
         model = builder_inf(args)
         self.build_model = torch.nn.DataParallel(model)
         print("WARNING: Only predictions are implemented at the moment, LIME is not available for this face module")
