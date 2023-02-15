@@ -3,17 +3,18 @@ import os
 from deepface.DeepFace import build_model
 from deepface.commons import functions
 import sys
-from ..facial_feature_extraction.QMagFace.preprocessing.insightface.src.mtcnn_detector import MtcnnDetector
-from ..facial_feature_extraction.QMagFace.preprocessing.align import preprocess
-from ..facial_feature_extraction.QMagFace.preprocessing.magface.network_inf import builder_inf
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+from QMagFace.preprocessing.insightface.src.mtcnn_detector import MtcnnDetector
+from QMagFace.preprocessing.align import preprocess
+from QMagFace.preprocessing.magface.network_inf import builder_inf
 import numpy as np
 import cv2
 import torch
 import torchvision.transforms
 from collections import namedtuple
 import io
-import pandas as pd
 import tensorflow as tf
+
 
 class FacialFeatureExtractor:
     def __init__(self):
