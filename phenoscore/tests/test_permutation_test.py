@@ -8,10 +8,11 @@ import os
 # these are both and technical tests in one, although it will sometime fail (so might remove them)
 # as p can occasionally be < 0.05 by random chance with the random tests
 
-class SimScorerTester(unittest.TestCase):
+
+class PermutationTestTester(unittest.TestCase):
     def setUp(self):
         self._simscorer = SimScorer(scoring_method='Resnik', sum_method='BMA')
-        self._phenoscorer = PhenoScorer(gene_name='random', mode='both')
+        self._phenoscorer = PhenoScorer(gene_name='random', mode='both', face_module='QMagFace')
 
     def test_negative_control_permutation(self):
         nodes = list(self._simscorer.hpo_network.nodes())
@@ -21,6 +22,7 @@ class SimScorerTester(unittest.TestCase):
         X = []
         y = np.array([0] * int(N_PATIENTS / 2) + [1] * int(N_PATIENTS / 2))
         shuffle(y)
+        y_all = []
 
         for p in range(5):  # simulating resampling of controls
             features_rand = np.zeros((N_PATIENTS, 2623), dtype=object)
@@ -31,8 +33,9 @@ class SimScorerTester(unittest.TestCase):
                 features_rand[i, :2622] = face_rand
                 features_rand[i, 2622] = hpo_rand
             X.append(features_rand)
+            y_all.append(y)
         permutation_tester = PermutationTester(self._simscorer, mode='both', bootstraps=100)
-        permutation_tester.permutation_test_multiple_X(X, y)
+        permutation_tester.permutation_test_multiple_X(X, y_all)
         print("Brier:" + str(np.mean(permutation_tester.classifier_results)))
         print("AUC:" + str(np.mean(permutation_tester.classifier_aucs)))
         print("P value:" + str(permutation_tester.p_value))

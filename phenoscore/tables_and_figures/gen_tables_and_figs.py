@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 def color_map_color(value, cmap_name='Wistia', vmin=0, vmax=1):
     """
     Convert number to color
-    
+
     Parameters
     ----------
     value: float
@@ -21,7 +21,7 @@ def color_map_color(value, cmap_name='Wistia', vmin=0, vmax=1):
         The minimum
     vmax: float
         The maximum
-    
+
     Returns
     -------
     color: matplotlib color
@@ -34,7 +34,7 @@ def color_map_color(value, cmap_name='Wistia', vmin=0, vmax=1):
     return color
 
 
-def add_corners(im, rad, fill_value=None, w=224, h=224):
+def add_corners(im, fill_value=None, w=224, h=224):
     """
     Add rounded edges to rectangular figure, purely for aesthetic reasons
 
@@ -42,14 +42,19 @@ def add_corners(im, rad, fill_value=None, w=224, h=224):
     ----------
     im: numpy array
         Image to add rounded edges to
-    rad: float
-        Radius of the edges to round
+    fill_value:
+        Filling for edges
+    w: float
+        width of image
+    h: float
+        height of image
 
     Returns
     -------
     im: numpy array
         Image with rounded edges
     """
+    rad = int(w/4.5)
     circle = Image.new('L', (rad * 2, rad * 2), 0)
     draw = ImageDraw.Draw(circle)
     draw.ellipse((0, 0, rad * 2, rad * 2), fill=255)
@@ -71,7 +76,7 @@ def add_corners(im, rad, fill_value=None, w=224, h=224):
 def get_top_HPO(list_of_hpo_terms, invert_negative_correlations):
     """
     Get the top HPO terms from a list of LIME explanations
-    
+
     Parameters
     ----------
     list_of_hpo_terms: list
@@ -84,39 +89,39 @@ def get_top_HPO(list_of_hpo_terms, invert_negative_correlations):
     -------
     df_summ_hpo: pandas DataFrame
         The top important features
-    """                          
+    """
     df_exp_total = pd.DataFrame()
-    
+
     for exp_hpo in list_of_hpo_terms:
         df_exp_here = pd.DataFrame(exp_hpo.as_list())
         df_exp_here = pd.concat([df_exp_here.iloc[:,0].str.split('=',expand=True), df_exp_here.iloc[:,1]],axis=1)
         df_exp_here.columns = ['hpo', 'positive', 'corr']
         df_exp_total = pd.concat([df_exp_total, df_exp_here]).reset_index(drop=True)
-    
+
     #now, we can invert all the negative correlations (i.e. if something is strongly negatively correlated with class 1, it points to class 0), since it is a binary classification problem: therefore this will only work with two classes!
     if invert_negative_correlations == True:
         df_exp_total.loc[df_exp_total['positive'] == '0', 'corr'] = -df_exp_total.loc[df_exp_total['positive'] == '0', 'corr']
     df_exp_total['positive'] = df_exp_total['positive'].astype(int)
-    
+
     if len(list_of_hpo_terms) > 4:
         #only take into account HPO terms that are present in at least 3 / 5 predictions, if there are at least 5
         # predictions, otherwise just take them all
         threshold = int(np.round(len(list_of_hpo_terms) * 0.6))
 
         df_exp_total = df_exp_total[df_exp_total.groupby("hpo")['hpo'].transform('size') > (threshold - 1)]
-    
+
     df_summ_hpo = df_exp_total.groupby('hpo').mean()
     df_summ_hpo['hpo'] = list(df_summ_hpo.index)
-    
+
     # if there are more than 10 important features, select the 10 with highest correlations
     df_summ_hpo = df_summ_hpo[df_summ_hpo['hpo'].isin(np.array(abs(df_summ_hpo['corr']).nlargest(10).index))]
     return df_summ_hpo
 
 
-def get_heatmap_from_multiple(list_of_heatmaps, fig, ax, bg_image, alpha):
+def get_heatmap_from_multiple(list_of_heatmaps, fig, ax, bg_image, alpha, input_img_size):
     """
     Generate one average heatmap over several iterations
-    
+
     Parameters
     ----------
     list_of_heatmaps: list
@@ -129,7 +134,9 @@ def get_heatmap_from_multiple(list_of_heatmaps, fig, ax, bg_image, alpha):
         Path to image to use as background for the facial heatmap
     alpha: float
         Transparance of the background image
-    
+    input_img_size: tuple
+        Size of the input image
+
     Returns
     -------
     fig: matplotlib fig object
@@ -139,19 +146,18 @@ def get_heatmap_from_multiple(list_of_heatmaps, fig, ax, bg_image, alpha):
     for explanation_ in list_of_heatmaps:
         ind = explanation_.top_labels[0]
         dict_heatmap = dict(explanation_.local_exp[ind])
-        try:
-            if np.isnan(np.vectorize(dict_heatmap.get)(explanation_.segments)).mean() == 0:
-                heatmaps.append(np.vectorize(dict_heatmap.get)(explanation_.segments))
-        except:
-            continue
-    heatmap = np.mean(heatmaps, axis=0) 
-    
+        temp_heatmap = np.vectorize(dict_heatmap.get)(explanation_.segments)
+        temp_heatmap[temp_heatmap == None] = np.nan
+        heatmaps.append(temp_heatmap)
+    heatmap = np.nanmean(heatmaps, axis=0)
+    heatmap = np.array(heatmap, dtype=float)
+
     max_heatmap = heatmap.max()
     min_heatmap = heatmap.min()
-    
-    heatmap = add_corners(heatmap, 50)
-    mean_face = add_corners(bg_image, 50, min_heatmap)
-    
+
+    heatmap = add_corners(heatmap, fill_value=None, w=input_img_size[0], h=input_img_size[1])
+    mean_face = add_corners(bg_image, fill_value=min_heatmap, w=input_img_size[0], h=input_img_size[1])
+
     sm = ax.imshow(heatmap, cmap = 'seismic_r',  vmin  = -max_heatmap, vmax = max_heatmap)
     #fig.colorbar(sm, ax=ax,fraction=0.046, pad=0.04)
     ax.imshow(mean_face, alpha=alpha)
@@ -162,51 +168,3 @@ def get_heatmap_from_multiple(list_of_heatmaps, fig, ax, bg_image, alpha):
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
     return fig
-
-
-def draw_heatmap(explanation, n_syndromes, ax=None):
-    """
-    Draw the heatmap of the LIME explanations for a single instance
-
-    Parameters
-    ----------
-    explanation: LIME explanation
-        The generated explanation instance
-    n_syndromes: list
-        List of syndromes, to be used to convert indices to syndrome names
-    ax: matplotlib ax instance
-        Axis to plot figure to
-    """
-    if type(explanation) == list:
-        heatmaps = []
-        for explanation_ in explanation:
-            ind =  explanation_.top_labels[0]
-            dict_heatmap = dict(explanation_.local_exp[ind])
-            try:
-                if np.isnan(np.vectorize(dict_heatmap.get)(explanation_.segments)).mean() == 0:
-                    heatmaps.append(np.vectorize(dict_heatmap.get)(explanation_.segments))
-            except:
-                continue
-        heatmap = np.mean(heatmaps, axis=0)
-        explanation = explanation_
-    else:
-        ind =  explanation.top_labels[0]
-        dict_heatmap = dict(explanation.local_exp[ind])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments)
-    temp, mask = explanation.get_image_and_mask(ind)
-    max_heatmap, min_heatmap = heatmap.max(), heatmap.min()
-    temp = add_corners()(temp, 50, min_heatmap)
-    heatmap = add_corners()(heatmap, 50)
-    if ax == None:
-        plt.title(n_syndromes[ind] + ', LIME score:' + str(np.round(explanation.score,2)) + ' Local pred: ' + str(np.round(explanation.local_pred[0],2)) )
-        plt.imshow(heatmap, cmap = 'seismic_r',  vmin  = -max_heatmap, vmax = max_heatmap)
-        plt.colorbar()
-        plt.imshow(temp, alpha=0.5)
-        plt.axis('off')
-        plt.show()
-    else:
-        ax.set_title(n_syndromes[ind] + ', LIME score:' + str(np.round(explanation.score,2)) + ' Local pred: ' + str(np.round(explanation.local_pred[0],2)) )
-        sm = ax.imshow(heatmap, cmap = 'seismic_r',  vmin  = -max_heatmap, vmax = max_heatmap)
-        ax.imshow(temp, alpha=0.5)
-        ax.axis('off')
-    return
