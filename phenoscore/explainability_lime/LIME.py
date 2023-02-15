@@ -2,9 +2,6 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import normalize
 from deepface import DeepFace
-from deepface.DeepFace import build_model
-from deepface.basemodels.VGGFace import loadModel
-from deepface.commons import functions
 from lime import lime_image
 from sklearn.preprocessing import MultiLabelBinarizer
 import traceback
@@ -25,70 +22,19 @@ def random_mask(image):
     -------
     Generated random mask
     """
-    size=(224, 224)
-    chunk_size=(25,25)
-    mask = np.zeros(size)
+    img_length = image.shape[0]
+    chunk_length = int(img_length/9)
 
-    count = -(chunk_size[0] -1)
-    prev_i = 0
-    prev_j = 0
+    total_pixels = int(img_length * img_length)
+    n_masks = int(np.ceil(total_pixels / chunk_length))
+    shifted_mask = np.zeros(np.random.randint(chunk_length), dtype=int)
+    shifted_mask = np.append(shifted_mask, np.repeat(list(range(1, n_masks + 1)), chunk_length))
+    shifted_mask = shifted_mask[:total_pixels].reshape(img_length, img_length)
+    shifted_mask = np.repeat(shifted_mask, chunk_length, axis=0)
+    shifted_mask = shifted_mask[np.random.randint(chunk_length):, :]
+    shifted_mask = shifted_mask[:img_length, :img_length]
 
-    RANDOM_SHIFT = np.random.randint(1, 25)
-
-    for i in range(1, size[0]):
-        for j in range(0, size[1]):
-            if ((j % chunk_size[0] == 0) and (i % chunk_size[1] == 0)):
-                mask[prev_i:i + RANDOM_SHIFT, prev_j:j + RANDOM_SHIFT] = count
-                prev_j = j + RANDOM_SHIFT
-                count += 1
-
-            if ((j == RANDOM_SHIFT -1) and (i % chunk_size[1] == 0)):
-                mask[prev_i:i + RANDOM_SHIFT, 0:RANDOM_SHIFT] = count
-                count += 1
-
-
-            if (j == size[0] -1):
-                mask[prev_i:i + RANDOM_SHIFT, prev_j:j+1 + RANDOM_SHIFT] = count
-                prev_j = j + RANDOM_SHIFT
-                count += 1
-
-            if ((j % chunk_size[0] == 0) and (i == size[0] -1)):
-                mask[prev_i:i+1+RANDOM_SHIFT, prev_j:j+RANDOM_SHIFT] = count
-                prev_j = j + RANDOM_SHIFT
-                count += 1
-
-        if (i % chunk_size[1] == 0):
-            prev_i = i + RANDOM_SHIFT
-            count = count - chunk_size[0]
-
-    return np.array(mask, dtype=int)
-
-
-def get_norm_image(img_path):
-    """
-    Preprocess the image for VGG-Face, using MTCNN (detect face, alignment, etc)
-
-    Parameters
-    ----------
-    img_path: str
-        Path to the image to process
-
-    Returns
-    -------
-    img_tensor: numpy array
-        The preprocessed image in array form
-    """
-    classifier = loadModel()
-    input_shape_x, input_shape_y = functions.find_input_shape(classifier)
-
-    img = functions.preprocess_face(img = img_path
-       		, target_size=(input_shape_y, input_shape_x)
-       		, enforce_detection = True
-       		, detector_backend = 'mtcnn'
-       		, align = True)
-
-    img_tensor = functions.normalize_input(img = img, normalization = 'base')
-    return img_tensor
+    return np.array(shifted_mask, dtype=int)
 
 
 def predict_image(X_face, classifier_args):
@@ -110,12 +56,12 @@ def predict_image(X_face, classifier_args):
     failed_images = []
 
     if type(X_face) == str:
-        X_face = get_norm_image(X_face)
+        X_face = classifier_args['face_model'].get_norm_image(X_face)
     elif type(X_face) == list:
         X_face_temp = []
         for i, file in enumerate(X_face):
             try:
-                X_face_temp.append(get_norm_image(file))
+                X_face_temp.append(classifier_args['face_model'].get_norm_image(file))
             except ValueError as e:
                 if 'Face could not be detected.' in str(e):
                     X_face_temp.append(np.zeros((1,224,224,3)))
@@ -124,7 +70,7 @@ def predict_image(X_face, classifier_args):
                     raise(e)
         X_face = np.array(X_face_temp)
 
-    img_test = classifier_args['vgg_model'].predict(X_face, verbose=False)
+    img_test = classifier_args['face_model'].predict_aligned_img(X_face)
 
     face_features = normalize(classifier_args['scale_face'].transform(img_test))
 
@@ -209,7 +155,7 @@ def predict_hpo(X_hpo, classifier_args):
 
     if img is not None:
         if type(img) == str:
-            face_features = np.array(DeepFace.represent(img, model_name='VGG-Face',detector_backend='mtcnn')).reshape(1,-1)
+            face_features = np.array(classifier_args['face_model'].process_file(img)).reshape(1,-1)
         else:
             face_features = img
 
@@ -226,7 +172,7 @@ def predict_hpo(X_hpo, classifier_args):
 
 
 def explain_prediction(X, index_pt, clf, scale_face=None, scale_hpo=None, hpo_terms_pt=None, hpo_terms_cont=None,
-                       simscorer=None, id_to_name=None, img_path_index_patient=None, n_iter=100):
+                       simscorer=None, id_to_name=None, img_path_index_patient=None, n_iter=100, facial_feature_extractor=None):
     """
     Use LIME to generate predictions for a prediction. Use both image (when available) and HPO terms. When no image is available (img_path_index_patient = None), only generate LIME for HPO terms.
 
@@ -258,6 +204,8 @@ def explain_prediction(X, index_pt, clf, scale_face=None, scale_hpo=None, hpo_te
         Path to image of the patient of interest. If None, do not generate LIME explanations for the facial image, only for the HPO terms.
     n_iter: int
         Number of iterations to use while generating LIME explanations for the image
+    facial_feature_extractor: FacialFeatureExtractor object
+        Instance to extract facial features, default is VGGFace, can be QMagFace as well
 
     Returns
     -------
@@ -298,22 +246,22 @@ def explain_prediction(X, index_pt, clf, scale_face=None, scale_hpo=None, hpo_te
                            'hpo_terms_cont' : hpo_terms_cont[:,0],
                            'mlb_classes'    : mlb.classes_,
                            'simscorer'      : simscorer,
-                           'vgg_model'      : build_model("VGG-Face")}
+                           'face_model'     : facial_feature_extractor}
     else:
         classifier_args = {'X_face'         : np.array(X[index_pt, :-1], dtype=float),
                            'clf'            : clf,
                            'scale_face'     : scale_face,
-                           'vgg_model'      : build_model("VGG-Face")}
+                           'face_model'     : facial_feature_extractor}
 
     if img_path_index_patient is not None:
         explainer = lime_image.LimeImageExplainer(verbose=False, feature_selection='lasso_path')
         exp_face = []
         local_pred_face = []
         segmentation_fn = random_mask
-        aligned_image = get_norm_image(img_path_index_patient)[0]
+        aligned_image = facial_feature_extractor.get_norm_image(img_path_index_patient)
         for m in range(n_iter):
             try:
-                explanation = explainer.explain_instance(aligned_image, predict_image, num_samples=200, batch_size=200,
+                explanation = explainer.explain_instance(aligned_image, predict_image, num_samples=200, batch_size=100,
                                                          segmentation_fn=segmentation_fn, classifier_args=classifier_args)
                 exp_face.append(explanation)
                 local_pred_face.append(explanation.local_pred[0])

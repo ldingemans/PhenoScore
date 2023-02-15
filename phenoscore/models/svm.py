@@ -3,7 +3,7 @@ from sklearn.model_selection import StratifiedKFold, LeaveOneOut
 from sklearn.preprocessing import normalize, StandardScaler
 
 
-def get_clf(X, y, simscorer, mode):
+def get_clf(X, y, simscorer, mode, facial_vector_size=2622):
     """
     Train a classifier while retaining the original scaler and features of the input data, so it can be used in LIME explanations later.
 
@@ -17,6 +17,8 @@ def get_clf(X, y, simscorer, mode):
         Instance of class for semantic similarity calculations
     mode: str
         Whether to use facial features, HPO data, or both
+    facial_vector_size: int
+        Size of the feature vector of facial recognition module
 
     Returns
     -------
@@ -57,7 +59,7 @@ def get_clf(X, y, simscorer, mode):
         scale_hpo, hpo_terms_pt, hpo_terms_cont, clf_hpo = None, None, None, None
 
     if mode != 'hpo':
-        face_features = np.array(X[:, :2622], dtype=float)
+        face_features = np.array(X[:, :facial_vector_size], dtype=float)
 
         scale_face = StandardScaler()
         face_features = normalize(scale_face.fit_transform(face_features))

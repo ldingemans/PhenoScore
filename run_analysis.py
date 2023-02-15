@@ -1,18 +1,25 @@
 import os
 from phenoscore.phenoscorer import PhenoScorer
 
+
 if __name__ == '__main__':
-        phenoscorer = PhenoScorer(gene_name='SATB1', mode='both', method_hpo_similarity='Resnik', method_summ_hpo_similarities='BMA')
-        X, y, img_paths, df_data = phenoscorer.load_data_from_excel(os.path.join("phenoscore", "sample_data",
-                                                                                 "satb1_data.xlsx"))
+        # excel_path = "\\\\umcsanfsclp01\\gen_archive\\Genetica-Projecten\\Facial Recognition\\Facial Recognition Syndromen\\preprocessed_phenoscore\\preprocessed_phenoscore_paper\\KANSL1_without_Nijmegen\\internal_nijmegen_vs_external\\df_data.xlsx"
+        excel_path = "\\\\umcsanfsclp01\\gen_archive\\Genetica-Projecten\\Facial Recognition\\Facial Recognition Syndromen\\preprocessed_phenoscore\\KMT2_Dmitrijs\\KMT2C_1_and_2\\2\\df_data.xlsx"
+        mode = 'both'
+
+        phenoscorer = PhenoScorer(gene_name='SATB1', mode=mode,
+                                  method_hpo_similarity='Resnik',
+                                  method_summ_hpo_similarities='BMA',
+                                  face_module='QMagFace')
+        X, y, img_paths, df_data = phenoscorer.load_data_from_excel(excel_path)
         print('Data loaded!')
-        phenoscorer.permutation_test(X, y, bootstraps=1000)
-        print("Brier:" + str(phenoscorer.permutation_test_brier))
-        print("AUC:" + str(phenoscorer.permutation_test_auc))
-        print("P value:" + str(phenoscorer.permutation_test_p_value))
+        # phenoscorer.permutation_test(X, y, bootstraps=1000)
+        # print("Brier:" + str(phenoscorer.permutation_test_brier))
+        # print("AUC:" + str(phenoscorer.permutation_test_auc))
+        # print("P value:" + str(phenoscorer.permutation_test_p_value))
 
         phenoscorer.get_lime(X, y, img_paths, n_lime=5)
-        phenoscorer.gen_lime_and_results_figure(bg_image=os.path.join("phenoscore", "sample_data", "background_image.jpg"),
+        phenoscorer.gen_lime_and_results_figure(bg_image=os.path.join("phenoscore", "phenoscore", "sample_data", "background_image.jpg"),
                                                 df_data=df_data, filename='lime_figure.pdf')
         print("LIME images generated!")
 
@@ -20,3 +27,4 @@ if __name__ == '__main__':
         phenoscorer.predict_new_sample(X, y, img_paths[-1], X[-1,-1])
         print("Predictive score between 0 (control) and 1 (syndrome): " + str(phenoscorer.vus_results[0]))
         phenoscorer.gen_vus_figure(filename='individual_lime_explanations.pdf')
+

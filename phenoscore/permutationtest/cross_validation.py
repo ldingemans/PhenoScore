@@ -20,7 +20,7 @@ class CrossValidatorAndLIME:
         self._n_lime = n_lime
         self.results = None
 
-    def get_results(self, X, y, img_paths, mode, simscorer):
+    def get_results(self, X, y, img_paths, mode, simscorer, facial_feature_extractor):
         """
         Small wrapper for function below that gets cross-validation results and LIME explanations.
 
@@ -37,11 +37,13 @@ class CrossValidatorAndLIME:
             Whether to use facial data, HPO terms, or both
         simscorer: SimScorer object
             Instance of the SimScorer class of this package
+        facial_feature_extractor: FacialFeatureExtractor object
+            Instance to extract facial features, default is VGGFace, can be QMagFace as well
         """
-        self.results = self._get_results_loo_cv(X, y, img_paths, mode, simscorer)
+        self.results = self._get_results_loo_cv(X, y, img_paths, mode, simscorer, facial_feature_extractor)
         return self
 
-    def _get_results_loo_cv(self, X, y, file_paths, mode, simscorer):
+    def _get_results_loo_cv(self, X, y, file_paths, mode, simscorer, facial_feature_extractor):
         """
         Get the results after cross-validation of the classifier for a genetic syndrome.
         Generate LIME explanations for the test predictions as well. These are the main analyses of the paper.
@@ -58,6 +60,8 @@ class CrossValidatorAndLIME:
             PhenoScore mode, either hpo/face/both depending on the data available and therefore which analysis to run.
         simscorer: object of SimScorer class
             Instance of class for semantic similarity calculations
+        facial_feature_extractor: FacialFeatureExtractor object
+            Instance to extract facial features, default is VGGFace, can be QMagFace as well
 
         Returns
         -------
@@ -75,7 +79,8 @@ class CrossValidatorAndLIME:
 
         if mode != 'hpo':
             y_pred_indexer = 0
-            y_real_test, y_pred_all_svm[:, y_pred_indexer], y_test_ind = get_loss(X[:, :2622], y, simscorer,
+            y_real_test, y_pred_all_svm[:, y_pred_indexer], y_test_ind = get_loss(X[:, :facial_feature_extractor.
+                                                                                  face_vector_size], y, simscorer,
                                                                                   mode='face', sim_mat=None)
         if mode != 'face':
             y_pred_indexer = 1
@@ -150,12 +155,14 @@ class CrossValidatorAndLIME:
                                                                                             simscorer,
                                                                                             simscorer.name_to_id_and_reverse,
                                                                                             str(file_paths[z]),
-                                                                                            n_iter=100)
+                                                                                            n_iter=100,
+                                                                                            facial_feature_extractor=facial_feature_extractor)
                 elif mode == 'face':
                     exp_face, local_pred_face, exp_hpo, local_pred_hpo = explain_prediction(X, z, clf, scale_face,
                                                                                             img_path_index_patient=str(
                                                                                                 file_paths[z]),
-                                                                                            n_iter=100)
+                                                                                            n_iter=100,
+                                                                                            facial_feature_extractor=facial_feature_extractor)
 
                 explanations_face.append(exp_face)
                 explanations_hpo.append(exp_hpo)

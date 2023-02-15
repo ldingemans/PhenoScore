@@ -113,7 +113,7 @@ class PermutationTester:
             List of arrays of size n x 2623 of the original patients and controls of the suspected syndrome: the
             VGG-Face2 feature vector and one cell with a list of the HPO IDs.
             This can be used if we are resampling from a control database for instance multiple times.
-        y: numpy array
+        y: list
             The y labels
 
         Returns
@@ -129,11 +129,6 @@ class PermutationTester:
         classifier_aucs: list
             AROC scores of the classifier on the real/unpermuted data
         """
-        if np.mean(y) != 0.5:
-            print(
-                "WARNING: the dataset is imbalanced. This permutation test has not been validated for imbalanced "
-                "datasets, it is therefore recommended to undersample the majority class. "
-                "The test will however continue now.")
 
         bootstrapped_results = []
         classifier_results = []
@@ -143,7 +138,12 @@ class PermutationTester:
         pbar = tqdm(total=len(X) * self._bootstraps + len(X))
 
         for z in range(len(X)):
-            acc, random_losses, auc = self._c2st(X[z], y, pbar)
+            acc, random_losses, auc = self._c2st(X[z], y[z], pbar)
+            if np.mean(y[z]) != 0.5:
+                print(
+                    "WARNING: the dataset is imbalanced. This permutation test has not been validated for imbalanced "
+                    "datasets, it is therefore recommended to undersample the majority class. "
+                    "The test will however continue now.")
 
             classifier_results.append(acc)
             classifier_aucs.append(auc)
