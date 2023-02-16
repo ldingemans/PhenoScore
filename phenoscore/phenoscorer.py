@@ -389,14 +389,14 @@ class PhenoScorer:
 
         fig = get_heatmap_from_multiple(exp_faces_all, fig, axs[0], self._facial_feature_extractor.get_norm_image(img),
                                         0.6, self._facial_feature_extractor.input_image_size)
-        axs[0].set_title('Face: ' + str(np.round(preds_face, 2)), fontsize=18, fontweight='bold')
+        axs[0].set_title('Face: ' + str(np.round(np.mean(preds_face), 2)), fontsize=18, fontweight='bold')
 
         if type(exp_hpos_all) == list:
             df_summ_hpo = get_top_HPO(exp_hpos_all, False)
         else:
             df_summ_hpo = get_top_HPO([exp_hpos_all], False)
 
-        axs[1].set_title('HPO: ' + str(np.round(preds_hpo, 2)), fontsize=18, fontweight='bold')
+        axs[1].set_title('HPO: ' + str(np.round(np.mean(preds_hpo), 2)), fontsize=18, fontweight='bold')
 
         df_summ_hpo = df_summ_hpo.sort_values('corr', ascending=False)
 
@@ -421,7 +421,7 @@ class PhenoScorer:
         axs[1].spines['left'].set_visible(False)
         axs[1].spines['right'].set_visible(False)
         axs[1].spines['top'].set_visible(False)
-        fig.suptitle('PhenoScore: ' + str(np.round(preds_both, 2)), fontsize=20, fontweight='bold')
+        fig.suptitle('PhenoScore: ' + str(np.round(np.mean(preds_both), 2)), fontsize=20, fontweight='bold')
         fig.savefig(filename, dpi=300, bbox_inches='tight')
         print("Figure saved as " + filename)
         plt.show()
