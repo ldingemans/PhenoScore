@@ -12,7 +12,7 @@ import os
 class PermutationTestTester(unittest.TestCase):
     def setUp(self):
         self._simscorer = SimScorer(scoring_method='Resnik', sum_method='BMA')
-        self._phenoscorer = PhenoScorer(gene_name='random', mode='both', face_module='QMagFace')
+        self._phenoscorer = PhenoScorer(gene_name='random', mode='both')
 
     def test_negative_control_permutation(self):
         nodes = list(self._simscorer.hpo_network.nodes())
@@ -25,13 +25,13 @@ class PermutationTestTester(unittest.TestCase):
         y_all = []
 
         for p in range(5):  # simulating resampling of controls
-            features_rand = np.zeros((N_PATIENTS, (self._facial_feature_extractor.face_vector_size+1)), dtype=object)
+            features_rand = np.zeros((N_PATIENTS, (self._phenoscorer._facial_feature_extractor.face_vector_size+1)), dtype=object)
             for i in range(len(features_rand)):
-                face_rand = np.random.uniform(-1, 1, self._facial_feature_extractor.face_vector_size)
+                face_rand = np.random.uniform(-1, 1, self._phenoscorer._facial_feature_extractor.face_vector_size)
                 hpo_rand = list(np.random.choice(nodes, size=np.random.randint(3, 30), replace=False))
 
-                features_rand[i, :self._facial_feature_extractor.face_vector_size] = face_rand
-                features_rand[i, self._facial_feature_extractor.face_vector_size] = hpo_rand
+                features_rand[i, :self._phenoscorer._facial_feature_extractor.face_vector_size] = face_rand
+                features_rand[i, self._phenoscorer._facial_feature_extractor.face_vector_size] = hpo_rand
             X.append(features_rand)
             y_all.append(y)
         permutation_tester = PermutationTester(self._simscorer, mode='both', bootstraps=100)
