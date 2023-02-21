@@ -130,8 +130,8 @@ def get_loss(X, y, simscorer, mode, sim_mat):
             X_hpo_train_norm = scale.fit_transform(resnik_avg_train)
             X_hpo_test_norm = scale.transform(resnik_avg_test)
         else:
-            X_face_train = np.array(X_train, dtype=float)
-            X_face_test = np.array(X_test, dtype=float)
+            X_face_train = np.array(X_train[:, :-1], dtype=float)
+            X_face_test = np.array(X_test[:, :-1], dtype=float)
 
         if mode != 'hpo':
             scale = StandardScaler()
@@ -177,20 +177,22 @@ def svm_class(X_train, y_train, X_test):
     """
     from sklearn import svm
     from sklearn.model_selection import GridSearchCV, LeaveOneOut
+    from sklearn.calibration import CalibratedClassifierCV
 
     param_grid = {'C': [1e-5, 1e-3, 1, 1e3, 1e5]}
 
     if (np.sum(y_train == 0) < 2) or (np.sum(y_train == 1) < 2):
-        clf = svm.SVC(probability=True)
+        clf = CalibratedClassifierCV(svm.SVC(), cv=LeaveOneOut())
     else:
         if len(X_train) < 10:
             skf = LeaveOneOut()
+            clf = GridSearchCV(svm.SVC(), param_grid, cv=skf, n_jobs=-1, scoring='accuracy')
+            clf = CalibratedClassifierCV(clf, cv=skf)
         else:
             skf = 5
-        clf = GridSearchCV(
-            svm.SVC(probability=True), param_grid, cv=skf, n_jobs=-1, scoring='neg_brier_score'
-        )
-
+            clf = GridSearchCV(
+                svm.SVC(probability=True), param_grid, cv=skf, n_jobs=-1, scoring='neg_brier_score'
+            )
     clf.fit(X_train, y_train)
     predictions = clf.predict_proba(X_test)[:, 1]
     return predictions, clf
