@@ -25,13 +25,13 @@ class PermutationTestTester(unittest.TestCase):
         y_all = []
 
         for p in range(5):  # simulating resampling of controls
-            features_rand = np.zeros((N_PATIENTS, 2623), dtype=object)
+            features_rand = np.zeros((N_PATIENTS, (self._facial_feature_extractor.face_vector_size+1)), dtype=object)
             for i in range(len(features_rand)):
-                face_rand = np.random.uniform(-1, 1, 2622)
+                face_rand = np.random.uniform(-1, 1, self._facial_feature_extractor.face_vector_size)
                 hpo_rand = list(np.random.choice(nodes, size=np.random.randint(3, 30), replace=False))
 
-                features_rand[i, :2622] = face_rand
-                features_rand[i, 2622] = hpo_rand
+                features_rand[i, :self._facial_feature_extractor.face_vector_size] = face_rand
+                features_rand[i, self._facial_feature_extractor.face_vector_size] = hpo_rand
             X.append(features_rand)
             y_all.append(y)
         permutation_tester = PermutationTester(self._simscorer, mode='both', bootstraps=100)
