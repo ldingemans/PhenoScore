@@ -14,7 +14,7 @@ class SVMTester(unittest.TestCase):
 
     def test_svm(self):
         nodes = list(self._simscorer.hpo_network.nodes())
-        for N_PATIENTS in [3, 4, 8, 12, 22]:
+        for N_PATIENTS in [3, 4, 6, 8, 12, 22]:
             y = np.array([0, 1] * int(N_PATIENTS))
             y = np.random.permutation(y)
 
