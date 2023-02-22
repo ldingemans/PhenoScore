@@ -179,20 +179,25 @@ def svm_class(X_train, y_train, X_test):
     from sklearn.model_selection import GridSearchCV, LeaveOneOut
     from sklearn.calibration import CalibratedClassifierCV
 
-    param_grid = {'C': [1e-5, 1e-3, 1, 1e3, 1e5]}
-
-    if (np.sum(y_train == 0) < 2) or (np.sum(y_train == 1) < 2):
-        clf = CalibratedClassifierCV(svm.SVC(), cv=LeaveOneOut())
-    else:
-        if len(X_train) < 10:
-            skf = LeaveOneOut()
-            clf = GridSearchCV(svm.SVC(), param_grid, cv=skf, n_jobs=-1, scoring='accuracy')
-            clf = CalibratedClassifierCV(clf, cv=skf)
+    if len(X_train) < 20:
+        zeros_count = len(y_train) - np.count_nonzero(y_train)
+        min_count = min(zeros_count, len(y_train) - zeros_count)
+        if min_count < 4:
+            clf = CalibratedClassifierCV(svm.SVC(), cv=LeaveOneOut())
         else:
-            skf = 5
+            if min_count > 5:
+                skf_cv = 5
+            else:
+                skf_cv = min_count
+            param_grid = {'estimator__C': [1e-5, 1e-3, 1, 1e3, 1e5]}
             clf = GridSearchCV(
-                svm.SVC(probability=True), param_grid, cv=skf, n_jobs=-1, scoring='neg_brier_score'
+                CalibratedClassifierCV(svm.SVC(), cv=skf_cv), param_grid, cv=skf_cv, n_jobs=-1, scoring='neg_brier_score'
             )
+    else:
+        param_grid = {'C': [1e-5, 1e-3, 1, 1e3, 1e5]}
+        clf = GridSearchCV(
+            svm.SVC(probability=True), param_grid, cv=5, n_jobs=-1, scoring='neg_brier_score'
+        )
     clf.fit(X_train, y_train)
     predictions = clf.predict_proba(X_test)[:, 1]
     return predictions, clf
