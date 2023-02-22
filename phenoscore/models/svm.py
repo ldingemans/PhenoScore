@@ -188,7 +188,7 @@ def svm_class(X_train, y_train, X_test):
             if min_count > 5:
                 skf_cv = 5
             else:
-                skf_cv = min_count
+                skf_cv = 3
             param_grid = {'estimator__C': [1e-5, 1e-3, 1, 1e3, 1e5]}
             clf = GridSearchCV(
                 CalibratedClassifierCV(svm.SVC(), cv=skf_cv), param_grid, cv=skf_cv, n_jobs=-1, scoring='neg_brier_score'
