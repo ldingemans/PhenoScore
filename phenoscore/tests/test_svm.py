@@ -14,11 +14,11 @@ class SVMTester(unittest.TestCase):
 
     def test_svm(self):
         nodes = list(self._simscorer.hpo_network.nodes())
-        for N_PATIENTS in [8, 12, 22]:
-            y = np.array([0, 1] * int(N_PATIENTS / 2))
+        for N_PATIENTS in [3, 4, 8, 12, 22]:
+            y = np.array([0, 1] * int(N_PATIENTS))
             y = np.random.permutation(y)
 
-            X = np.zeros((N_PATIENTS, 2623), dtype=object)
+            X = np.zeros((int(N_PATIENTS*2), 2623), dtype=object)
             for i in range(len(X)):
                 face_rand = np.random.uniform(-1, 1, 2622)
                 hpo_rand = list(np.random.choice(nodes, size=np.random.randint(3, 30), replace=False))
@@ -33,3 +33,4 @@ class SVMTester(unittest.TestCase):
             assert brier_score_loss(y_real, y_pred) > 0.2
             y_real, y_pred, y_ind = get_loss(X, y, self._simscorer, 'both', sim_mat)
             assert brier_score_loss(y_real, y_pred) > 0.2
+
