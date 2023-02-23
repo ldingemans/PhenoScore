@@ -14,7 +14,7 @@ class SVMTester(unittest.TestCase):
 
     def test_svm(self):
         nodes = list(self._simscorer.hpo_network.nodes())
-        for N_PATIENTS in [3, 4, 6, 8, 12, 22]:
+        for N_PATIENTS in [3, 4, 5, 6, 8, 12, 22]:
             hpo_scores, face_scores, both_scores = [], [], []
             for z in range(5):
                 y = np.array([0, 1] * int(N_PATIENTS))
