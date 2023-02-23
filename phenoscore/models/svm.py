@@ -178,26 +178,25 @@ def svm_class(X_train, y_train, X_test):
     from sklearn import svm
     from sklearn.model_selection import GridSearchCV, LeaveOneOut
     from sklearn.calibration import CalibratedClassifierCV
+    from sklearn.linear_model import LogisticRegression
+
 
     if len(X_train) < 20:
         zeros_count = len(y_train) - np.count_nonzero(y_train)
         min_count = min(zeros_count, len(y_train) - zeros_count)
-        if min_count < 4:
-            clf = CalibratedClassifierCV(svm.SVC(), cv=LeaveOneOut())
+        if min_count > 5:
+            skf_cv = 5
         else:
-            if min_count > 5:
-                skf_cv = 5
-            else:
-                skf_cv = 3
-            param_grid = {'estimator__C': [1e-5, 1e-3, 1, 1e3, 1e5]}
-            clf = GridSearchCV(
-                CalibratedClassifierCV(svm.SVC(), cv=skf_cv), param_grid, cv=skf_cv, n_jobs=-1, scoring='neg_brier_score'
-            )
+            skf_cv = LeaveOneOut()
+        param_grid = {'C': [1e-3, 1, 1e3]}
+        clf = GridSearchCV(LogisticRegression(penalty='l1', max_iter=1000000, solver='liblinear'),
+                           param_grid, cv=skf_cv, n_jobs=-1, scoring='neg_brier_score')
     else:
         param_grid = {'C': [1e-5, 1e-3, 1, 1e3, 1e5]}
         clf = GridSearchCV(
             svm.SVC(probability=True), param_grid, cv=5, n_jobs=-1, scoring='neg_brier_score'
         )
+
     clf.fit(X_train, y_train)
     predictions = clf.predict_proba(X_test)[:, 1]
     return predictions, clf
