@@ -107,7 +107,7 @@ def get_loss(X, y, simscorer, mode, sim_mat):
         The predicted y labels during cross-validation
     """
 
-    if len(X) < 20:
+    if len(X) < 10:
         skf = LeaveOneOut()
         skf.get_n_splits(X, y)
     else:
@@ -177,20 +177,12 @@ def svm_class(X_train, y_train, X_test):
     """
     from sklearn import svm
     from sklearn.model_selection import GridSearchCV, LeaveOneOut
-    from sklearn.calibration import CalibratedClassifierCV
     from sklearn.linear_model import LogisticRegression
 
-
-    if len(X_train) < 20:
-        zeros_count = len(y_train) - np.count_nonzero(y_train)
-        min_count = min(zeros_count, len(y_train) - zeros_count)
-        if min_count > 5:
-            skf_cv = 5
-        else:
-            skf_cv = LeaveOneOut()
+    if len(X_train) < 10:
         param_grid = {'C': [1e-3, 1, 1e3]}
         clf = GridSearchCV(LogisticRegression(penalty='l1', max_iter=1000000, solver='liblinear'),
-                           param_grid, cv=skf_cv, n_jobs=-1, scoring='neg_brier_score')
+                           param_grid, cv=LeaveOneOut(), n_jobs=-1, scoring='neg_brier_score')
     else:
         param_grid = {'C': [1e-5, 1e-3, 1, 1e3, 1e5]}
         clf = GridSearchCV(
