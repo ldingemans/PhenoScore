@@ -104,6 +104,9 @@ class CrossValidatorAndLIME:
         pbar = tqdm(total=self._n_lime)
 
         for z in y_test_ind:
+            if mode == 'face' or mode == 'both':
+                file_paths_sorted.append(file_paths[z])
+
             if z in highest_predictions:
                 assert (y[z] == 1)
                 # we need to retrain the model to get clf and other variables with this instance in the test set and rest as training data
@@ -168,15 +171,12 @@ class CrossValidatorAndLIME:
                 explanations_hpo.append(exp_hpo)
                 local_preds_face.append(local_pred_face)
                 local_preds_hpo.append(local_pred_hpo)
-                if mode != 'hpo':
-                    file_paths_sorted.append(file_paths[z])
                 pbar.update(1)
             else:
                 explanations_face.append('')
                 explanations_hpo.append('')
                 local_preds_face.append('')
                 local_preds_hpo.append('')
-                file_paths_sorted.append('')
 
         pbar.close()
 
@@ -193,7 +193,7 @@ class CrossValidatorAndLIME:
                                                                                                     2])
         results[6], results[7], results[8], results[9], results[10], results[
             11] = explanations_face, explanations_hpo, local_preds_face, local_preds_hpo, y_pred_all_svm[:,
-                                                                                          2], y_real_test
+                                                                                          y_pred_indexer], y_real_test
         results[12] = file_paths_sorted
 
         df_results = pd.DataFrame(results).T
