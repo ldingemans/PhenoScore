@@ -317,8 +317,12 @@ class PhenoScorer:
         local_pred_hpos: list
             LIME prediction for this instance
         """
-        clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = \
+        if self.mode == 'both' or self.mode == 'face':
+            clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = \
             get_clf(original_X, original_y, self._simscorer, self.mode, self._facial_feature_extractor.face_vector_size)
+        elif self.mode == 'hpo':
+            clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = \
+            get_clf(original_X, original_y, self._simscorer, self.mode, None)
 
         if self.mode != 'face':
             filtered_hpo = self._simscorer.filter_hpo_df(hpo_all_new_sample)
@@ -384,44 +388,51 @@ class PhenoScorer:
         """
         [preds_both, preds_hpo, preds_face, exp_faces_all, exp_hpos_all, img] = self.vus_results
 
-        fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-        axs = axs.flatten()
-
-        fig = get_heatmap_from_multiple(exp_faces_all, fig, axs[0], self._facial_feature_extractor.get_norm_image(img),
-                                        0.6, self._facial_feature_extractor.input_image_size)
-        axs[0].set_title('Face: ' + str(np.round(np.mean(preds_face), 2)), fontsize=18, fontweight='bold')
-
-        if type(exp_hpos_all) == list:
-            df_summ_hpo = get_top_HPO(exp_hpos_all, False)
+        if self.mode == 'both':
+            fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+            axs = axs.flatten()
         else:
-            df_summ_hpo = get_top_HPO([exp_hpos_all], False)
+            fig, axs = plt.subplots(1, 1, figsize=(6, 5))
+            axs = np.array([axs])
 
-        axs[1].set_title('HPO: ' + str(np.round(np.mean(preds_hpo), 2)), fontsize=18, fontweight='bold')
+        if self.mode == 'face' or self.mode == 'both':
+            fig = get_heatmap_from_multiple(exp_faces_all, fig, axs[0], self._facial_feature_extractor.get_norm_image(img),
+                                            0.6, self._facial_feature_extractor.input_image_size)
+            axs[0].set_title('Face: ' + str(np.round(np.mean(preds_face), 2)), fontsize=18, fontweight='bold')
 
-        df_summ_hpo = df_summ_hpo.sort_values('corr', ascending=False)
+        if self.mode == 'hpo' or self.mode == 'both':
+            if type(exp_hpos_all) == list:
+                df_summ_hpo = get_top_HPO(exp_hpos_all, False)
+            else:
+                df_summ_hpo = get_top_HPO([exp_hpos_all], False)
 
-        if len(df_summ_hpo) > 0:
-            g = sns.barplot(x=df_summ_hpo['corr'], y=list(df_summ_hpo.index), color='blue', alpha=0.6, ax=axs[1])
+            axs[-1].set_title('HPO: ' + str(np.round(np.mean(preds_hpo), 2)), fontsize=18, fontweight='bold')
 
-            for bar in g.patches:
-                if bar.get_width() < 0:
-                    bar.set_color('red')
-            df_summ_hpo = df_summ_hpo.reset_index(drop=True)
-            for y in range(len(df_summ_hpo)):
-                axs[1].text(0, y, df_summ_hpo.loc[y, 'hpo'] + ' = ' + str(int(df_summ_hpo.loc[y, 'positive'])),
-                            fontsize=12, horizontalalignment='center', verticalalignment='center',
-                            fontweight='semibold')
-            axs[1].set_xlabel('LIME regression coefficient')
+            df_summ_hpo = df_summ_hpo.sort_values('corr', ascending=False)
 
-            axs[1].set_xlim(-0.25, 0.25)
-            axs[1].set_yticks([])
-        else:
-            axs[1].text(0.25, 0.5, 'No relevant features found')
-        axs[1].axes.yaxis.set_visible(False)
-        axs[1].spines['left'].set_visible(False)
-        axs[1].spines['right'].set_visible(False)
-        axs[1].spines['top'].set_visible(False)
-        fig.suptitle('PhenoScore: ' + str(np.round(np.mean(preds_both), 2)), fontsize=20, fontweight='bold')
+            if len(df_summ_hpo) > 0:
+                g = sns.barplot(x=df_summ_hpo['corr'], y=list(df_summ_hpo.index), color='blue', alpha=0.6, ax=axs[-1])
+
+                for bar in g.patches:
+                    if bar.get_width() < 0:
+                        bar.set_color('red')
+                df_summ_hpo = df_summ_hpo.reset_index(drop=True)
+                for y in range(len(df_summ_hpo)):
+                    axs[-1].text(0, y, df_summ_hpo.loc[y, 'hpo'] + ' = ' + str(int(df_summ_hpo.loc[y, 'positive'])),
+                                fontsize=12, horizontalalignment='center', verticalalignment='center',
+                                fontweight='semibold')
+                axs[-1].set_xlabel('LIME regression coefficient')
+
+                axs[-1].set_xlim(-0.25, 0.25)
+                axs[-1].set_yticks([])
+            else:
+                axs[-1].text(0.25, 0.5, 'No relevant features found')
+            axs[-1].axes.yaxis.set_visible(False)
+            axs[-1].spines['left'].set_visible(False)
+            axs[-1].spines['right'].set_visible(False)
+            axs[-1].spines['top'].set_visible(False)
+        if self.mode == 'both':
+            fig.suptitle('PhenoScore: ' + str(np.round(np.mean(preds_both), 2)), fontsize=20, fontweight='bold')
         fig.savefig(filename, dpi=300, bbox_inches='tight')
         print("Figure saved as " + filename)
         plt.show()
