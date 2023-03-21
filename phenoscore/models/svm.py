@@ -3,7 +3,7 @@ from sklearn.model_selection import StratifiedKFold, LeaveOneOut
 from sklearn.preprocessing import normalize, StandardScaler
 
 
-def get_clf(X, y, simscorer, mode):
+def get_clf(X, y, simscorer, mode, facial_vector_size=2622):
     """
     Train a classifier while retaining the original scaler and features of the input data, so it can be used in LIME explanations later.
 
@@ -17,6 +17,8 @@ def get_clf(X, y, simscorer, mode):
         Instance of class for semantic similarity calculations
     mode: str
         Whether to use facial features, HPO data, or both
+    facial_vector_size: int
+        Size of the feature vector of facial recognition module
 
     Returns
     -------
@@ -57,7 +59,7 @@ def get_clf(X, y, simscorer, mode):
         scale_hpo, hpo_terms_pt, hpo_terms_cont, clf_hpo = None, None, None, None
 
     if mode != 'hpo':
-        face_features = np.array(X[:, :2622], dtype=float)
+        face_features = np.array(X[:, :facial_vector_size], dtype=float)
 
         scale_face = StandardScaler()
         face_features = normalize(scale_face.fit_transform(face_features))
@@ -105,7 +107,7 @@ def get_loss(X, y, simscorer, mode, sim_mat):
         The predicted y labels during cross-validation
     """
 
-    if len(X) < 20:
+    if len(X) < 10:
         skf = LeaveOneOut()
         skf.get_n_splits(X, y)
     else:
@@ -128,8 +130,8 @@ def get_loss(X, y, simscorer, mode, sim_mat):
             X_hpo_train_norm = scale.fit_transform(resnik_avg_train)
             X_hpo_test_norm = scale.transform(resnik_avg_test)
         else:
-            X_face_train = np.array(X_train, dtype=float)
-            X_face_test = np.array(X_test, dtype=float)
+            X_face_train = np.array(X_train[:, :-1], dtype=float)
+            X_face_test = np.array(X_test[:, :-1], dtype=float)
 
         if mode != 'hpo':
             scale = StandardScaler()
@@ -175,18 +177,16 @@ def svm_class(X_train, y_train, X_test):
     """
     from sklearn import svm
     from sklearn.model_selection import GridSearchCV, LeaveOneOut
+    from sklearn.linear_model import LogisticRegression
 
-    param_grid = {'C': [1e-5, 1e-3, 1, 1e3, 1e5]}
-
-    if (np.sum(y_train == 0) < 2) or (np.sum(y_train == 1) < 2):
-        clf = svm.SVC(probability=True)
+    if len(X_train) < 10:
+        param_grid = {'C': [1e-3, 1, 1e3]}
+        clf = GridSearchCV(LogisticRegression(penalty='l1', max_iter=1000000, solver='liblinear'),
+                           param_grid, cv=LeaveOneOut(), n_jobs=-1, scoring='neg_brier_score')
     else:
-        if len(X_train) < 10:
-            skf = LeaveOneOut()
-        else:
-            skf = 5
+        param_grid = {'C': [1e-5, 1e-3, 1, 1e3, 1e5]}
         clf = GridSearchCV(
-            svm.SVC(probability=True), param_grid, cv=skf, n_jobs=-1, scoring='neg_brier_score'
+            svm.SVC(probability=True), param_grid, cv=5, n_jobs=-1, scoring='neg_brier_score'
         )
 
     clf.fit(X_train, y_train)

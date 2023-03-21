@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import ast
 import os
-from deepface import DeepFace
+
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -11,13 +11,14 @@ from phenoscore.hpo_phenotype.calc_hpo_sim import SimScorer
 from phenoscore.permutationtest.permutation_test import PermutationTester
 from phenoscore.permutationtest.cross_validation import CrossValidatorAndLIME
 from phenoscore.tables_and_figures.gen_tables_and_figs import get_top_HPO, get_heatmap_from_multiple
-from phenoscore.explainability_lime.LIME import get_norm_image, explain_prediction
+from phenoscore.explainability_lime.LIME import explain_prediction
+from phenoscore.facial_feature_extraction.extract_facial_features import VGGFaceExtractor, QMagFaceExtractor
 from phenoscore.models.svm import get_clf
 from sklearn.preprocessing import normalize
 
 
 class PhenoScorer:
-    def __init__(self, gene_name, mode, method_hpo_similarity='Resnik', method_summ_hpo_similarities='BMA'):
+    def __init__(self, gene_name, mode, method_hpo_similarity='Resnik', method_summ_hpo_similarities='BMA', face_module='VGGFace'):
         """
         Constructor
 
@@ -33,6 +34,8 @@ class PhenoScorer:
         method_summ_hpo_similarities: str
             Method to summarize the HPO term similarities.
             Can be BMA, BMWA, or maximum.
+        face_module: str
+            Method to extract facial features, default is VGGFace, can be QMagFace as well
         """
         devices = tf.config.list_physical_devices('GPU')
         if len(devices) == 0:
@@ -41,6 +44,7 @@ class PhenoScorer:
             print('Using GPUs:' + str(devices))
 
         assert ((mode == 'both') or (mode == 'face') or (mode == 'hpo'))
+
         self.gene_name = gene_name
         self.mode = mode
         self.permutation_test_brier = None
@@ -48,6 +52,18 @@ class PhenoScorer:
         self.permutation_test_p_value = None
         self.lime_results = None
         self._simscorer = SimScorer(scoring_method=method_hpo_similarity, sum_method=method_summ_hpo_similarities)
+        if (mode == 'both') or (mode == 'face'):
+            if face_module == 'VGGFace':
+                self._facial_feature_extractor = VGGFaceExtractor()
+            elif face_module == 'QMagFace':
+                path_to_script = os.path.realpath(__file__).split(os.sep)[:-1]
+                path_to_script.insert(1, os.sep)
+                path_to_qmagface = os.path.join(*path_to_script, 'facial_feature_extraction')
+                self._facial_feature_extractor = QMagFaceExtractor(path_to_dir=path_to_qmagface)
+            else:
+                ValueError('Invalid facial recognition module chosen')
+        else:
+            self._facial_feature_extractor = None
         self.vus_results = None
 
     def load_data_from_excel(self, path_to_excel_file):
@@ -62,22 +78,40 @@ class PhenoScorer:
         df_data = pd.read_excel(path_to_excel_file)
         df_data['graph'], df_data['hpo_name_inc_parents'] = '', ''
 
-        X = np.zeros((len(df_data), 2623), dtype=object)
+        if (self.mode == 'both') or (self.mode == 'face'):
+            X = np.zeros((len(df_data), self._facial_feature_extractor.face_vector_size + 1), dtype=object)
+        elif self.mode == 'hpo':
+            X = np.zeros((len(df_data), 1), dtype=object)
+
         y = df_data.loc[:, 'y_label'].to_numpy()
         img_paths = []
 
         # convert images to VGG-Face feature vector and create the appropriate numpy array X
         for i in range(len(df_data)):
-            if self.mode != 'hpo':
+            if (self.mode == 'both') or (self.mode == 'face'):
                 full_img_path = os.path.join(os.path.dirname(path_to_excel_file),
                                              df_data.loc[i, 'path_to_file'].replace('\\', os.sep))
-                X[i, :2622] = DeepFace.represent(full_img_path, model_name='VGG-Face', detector_backend='mtcnn')
+                X[i, :self._facial_feature_extractor.face_vector_size] = self._facial_feature_extractor.process_file(full_img_path)
                 img_paths.append(full_img_path)
-            if self.mode != 'face':
-                X[i, 2622] = ast.literal_eval(df_data.loc[i, 'hpo_all'])
+            elif self.mode == 'hpo':
+                X[i, 0] = ast.literal_eval(df_data.loc[i, 'hpo_all'])
                 df_data.at[i, 'graph'] = self._simscorer.get_graph(ast.literal_eval(df_data.loc[i, 'hpo_all']), False)
                 df_data.at[i, 'hpo_name_inc_parents'] = list(df_data.at[i, 'graph'].nodes())
-
+            if self.mode == 'both':
+                X[i, self._facial_feature_extractor.face_vector_size] = ast.literal_eval(df_data.loc[i, 'hpo_all'])
+                df_data.at[i, 'graph'] = self._simscorer.get_graph(ast.literal_eval(df_data.loc[i, 'hpo_all']), False)
+                df_data.at[i, 'hpo_name_inc_parents'] = list(df_data.at[i, 'graph'].nodes())
+        if (self.mode == 'both') or (self.mode == 'face'):
+            indices_not_processed_photographs = np.isnan(X[:, 0].astype(float))
+            if np.sum(indices_not_processed_photographs) > 0:
+                print('The following facial photographs failed to process, because no face was detected:')
+                for i in range(len(indices_not_processed_photographs)):
+                    if indices_not_processed_photographs[i]:
+                        print(img_paths[i])
+                X = X[~indices_not_processed_photographs]
+                y = y[~indices_not_processed_photographs]
+                img_paths = list(np.array(img_paths)[~indices_not_processed_photographs])
+                df_data = df_data.loc[~indices_not_processed_photographs, :].reset_index(drop=True)
         return X, y, img_paths, df_data
 
     def permutation_test(self, X, y, bootstraps=1000):
@@ -120,7 +154,7 @@ class PhenoScorer:
             Number of top predictions to generate LIME predictions for
         """
         cross_val_and_limer = CrossValidatorAndLIME(n_lime=n_lime)
-        cross_val_and_limer.get_results(X, y, img_paths, self.mode, self._simscorer)
+        cross_val_and_limer.get_results(X, y, img_paths, self.mode, self._simscorer, self._facial_feature_extractor)
         self.lime_results = cross_val_and_limer.results
         return self
 
@@ -148,14 +182,19 @@ class PhenoScorer:
 
         mpl.rcParams['pdf.fonttype'] = 42
         mpl.rcParams['ps.fonttype'] = 42
-        mean_face_norm = get_norm_image(bg_image)[0]
+        if self.mode == 'face' or self.mode == 'both':
+            mean_face_norm = self._facial_feature_extractor.get_norm_image(bg_image)
 
         score_aroc_both = np.round(self.lime_results.loc[0, 'roc_both_svm'], 2)
         score_aroc_face = np.round(self.lime_results.loc[0, 'roc_face_svm'], 2)
         score_aroc_hpo = np.round(self.lime_results.loc[0, 'roc_hpo_svm'], 2)
 
-        fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-        axs = axs.flatten()
+        if self.mode == 'both':
+            fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+            axs = axs.flatten()
+        else:
+            fig, axs = plt.subplots(1, 1, figsize=(6, 5))
+            axs = np.array([axs])
 
         df_exp = pd.DataFrame()
         df_exp['hpo_pred'] = np.array(self.lime_results.loc[0, 'hpo_pred'])
@@ -168,31 +207,34 @@ class PhenoScorer:
         df_exp['face_exp'] = np.array(self.lime_results.loc[0, 'face_explanation'])
         df_exp['y_true'] = np.array(self.lime_results.loc[0, 'y_real'])
 
-        if self.mode != 'hpo':
+        if self.mode == 'face' or self.mode == 'both':
             df_top = df_exp[df_exp['face_exp'] != ''].reset_index(drop=True)
         else:
             df_top = df_exp[df_exp['hpo_exp'] != ''].reset_index(drop=True)
 
-        if self.mode != 'face':
+        if self.mode == 'hpo' or self.mode == 'both':
             df_summ_hpo = get_top_HPO(df_top.loc[:, 'hpo_exp'].explode(), True)
 
-        if self.mode != 'hpo':
-            fig = get_heatmap_from_multiple(df_top.loc[:, 'face_exp'].explode(), fig, axs[0], mean_face_norm, 0.5)
+        if self.mode == 'face' or self.mode == 'both':
+            fig = get_heatmap_from_multiple(df_top.loc[:, 'face_exp'].explode(), fig, axs[0], mean_face_norm, 0.5, self._facial_feature_extractor.input_image_size)
             axs[0].set_title('Face: ' + str(score_aroc_face), fontsize=18, fontweight='bold')
             axs[0].set_ylabel(self.gene_name, fontsize=18, fontweight='bold', style='italic')
-            axs[0].annotate("n=" + str(int(np.sum(self.lime_results.loc[0, 'y_real'] == 1)/lime_iterations)), (95, 240),
+            x_n_text = int(self._facial_feature_extractor.input_image_size[0] / 2.4)
+            y_n_text = int(self._facial_feature_extractor.input_image_size[0] * 1.1)
+            axs[0].annotate("n=" + str(int(np.sum(self.lime_results.loc[0, 'y_real'] == 1)/lime_iterations)),
+                            (x_n_text, y_n_text),
                             annotation_clip=False,
                             fontsize=16, fontweight='bold')
 
-        if self.mode != 'face':
-            axs[1].set_title('HPO: ' + str(score_aroc_hpo), fontsize=18, fontweight='bold')
+        if self.mode == 'hpo' or self.mode == 'both':
+            axs[len(axs) - 1].set_title('HPO: ' + str(score_aroc_hpo), fontsize=18, fontweight='bold')
 
             df_summ_hpo = df_summ_hpo.sort_values('corr', ascending=False)
             if bubble_plot == True:
                 df_summ_hpo = df_summ_hpo.loc[df_summ_hpo['corr'] > 0, :] # only use positive correlations for this plot
                 x = [0] * len(df_summ_hpo)
                 y = np.flip(range(len(df_summ_hpo)))
-                axs[1].scatter(x, y, alpha=0.5, s=df_summ_hpo['corr'].to_numpy() * 30000)
+                axs[len(axs) - 1].scatter(x, y, alpha=0.5, s=df_summ_hpo['corr'].to_numpy() * 30000)
                 for i, txt in enumerate(list(df_summ_hpo.index)):
                     txt = txt.replace(' greater than ', ' > ')
                     txt = txt.replace(' less than ', ' < ')
@@ -204,11 +246,11 @@ class PhenoScorer:
                         txt = 'Birth length >\n 97th percentile'
                     if txt == 'Gastrostomy tube feeding in infancy':
                         txt = 'Gastrostomy tube feeding\nin infancy'
-                    axs[1].annotate(txt, (x[i] + 0.12, y[i]), verticalalignment="center",
+                    axs[len(axs) - 1].annotate(txt, (x[i] + 0.12, y[i]), verticalalignment="center",
                                            horizontalalignment="left", fontsize=16, fontweight='semibold')
-                axs[1].set_xlim(-0.2, 0.5)
-                axs[1].set_ylim(-2, 6)
-                axs[1].set_axis_off()
+                axs[len(axs) - 1].set_xlim(-0.2, 0.5)
+                axs[len(axs) - 1].set_ylim(-2, 6)
+                axs[len(axs) - 1].set_axis_off()
             else:
                 for hpo_term in df_summ_hpo['hpo']:
                     df_summ_hpo.loc[hpo_term, 'prev_0'] = df_data.loc[
@@ -216,28 +258,28 @@ class PhenoScorer:
                     df_summ_hpo.loc[hpo_term, 'prev_1'] = df_data.loc[
                         df_data['y_label'] == 1, 'hpo_name_inc_parents'].astype(str).str.contains(hpo_term).mean()
 
-                g = sns.barplot(x=df_summ_hpo['corr'], y=list(df_summ_hpo.index), color='blue', alpha=0.6, ax=axs[1])
+                g = sns.barplot(x=df_summ_hpo['corr'], y=list(df_summ_hpo.index), color='blue', alpha=0.6, ax=axs[len(axs) - 1])
 
                 for bar in g.patches:
                     if bar.get_width() < 0:
                         bar.set_color('red')
-                axs[1].set_xlim(-0.25, 0.25)
-                axs[1].set_yticks([])
-                axs[1].axes.yaxis.set_visible(False)
-                axs[1].spines['left'].set_visible(False)
-                axs[1].spines['right'].set_visible(False)
-                axs[1].spines['top'].set_visible(False)
-                axs[1].set_xlabel('LIME regression coefficient')
+                axs[len(axs) - 1].set_xlim(-0.25, 0.25)
+                axs[len(axs) - 1].set_yticks([])
+                axs[len(axs) - 1].axes.yaxis.set_visible(False)
+                axs[len(axs) - 1].spines['left'].set_visible(False)
+                axs[len(axs) - 1].spines['right'].set_visible(False)
+                axs[len(axs) - 1].spines['top'].set_visible(False)
+                axs[len(axs) - 1].set_xlabel('LIME regression coefficient')
                 df_summ_hpo = df_summ_hpo.reset_index(drop=True)
                 for y in range(len(df_summ_hpo)):
-                    axs[1].text(0, y, df_summ_hpo.loc[y, 'hpo'], fontsize=12, horizontalalignment='center',
+                    axs[len(axs) - 1].text(0, y, df_summ_hpo.loc[y, 'hpo'], fontsize=12, horizontalalignment='center',
                                 verticalalignment='center', fontweight='semibold')
-                    axs[1].text(-0.28, y, str(int(np.round(df_summ_hpo.loc[y, 'prev_0'] * 100))) + '%', fontsize=12,
+                    axs[len(axs) - 1].text(-0.28, y, str(int(np.round(df_summ_hpo.loc[y, 'prev_0'] * 100))) + '%', fontsize=12,
                                 horizontalalignment='left', verticalalignment='center')
-                    axs[1].text(0.28, y, str(int(np.round(df_summ_hpo.loc[y, 'prev_1'] * 100))) + '%', fontsize=12,
+                    axs[len(axs) - 1].text(0.28, y, str(int(np.round(df_summ_hpo.loc[y, 'prev_1'] * 100))) + '%', fontsize=12,
                                 horizontalalignment='right', verticalalignment='center')
-
-        fig.suptitle('PhenoScore: ' + str(score_aroc_both), fontsize=20, fontweight='bold', horizontalalignment='center', x=0.53)
+        if self.mode == 'both':
+            fig.suptitle('PhenoScore: ' + str(score_aroc_both), fontsize=20, fontweight='bold', horizontalalignment='center', x=0.53)
         plt.subplots_adjust(top=0.77)
         fig.savefig(filename, dpi=300, bbox_inches='tight')
         print("Figure saved as " + filename)
@@ -275,8 +317,12 @@ class PhenoScorer:
         local_pred_hpos: list
             LIME prediction for this instance
         """
-        clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = \
-            get_clf(original_X, original_y, self._simscorer, self.mode)
+        if self.mode == 'both' or self.mode == 'face':
+            clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = \
+            get_clf(original_X, original_y, self._simscorer, self.mode, self._facial_feature_extractor.face_vector_size)
+        elif self.mode == 'hpo':
+            clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = \
+            get_clf(original_X, original_y, self._simscorer, self.mode, None)
 
         if self.mode != 'face':
             filtered_hpo = self._simscorer.filter_hpo_df(hpo_all_new_sample)
@@ -294,12 +340,12 @@ class PhenoScorer:
             preds_hpo = clf_hpo.predict_proba(hpo_features)[:, 1]
 
         if self.mode != 'hpo':
-            face_features = np.array(DeepFace.represent(img, model_name='VGG-Face', detector_backend='mtcnn')).reshape(1, -1)
+            face_features = np.array(self._facial_feature_extractor.process_file(img)).reshape(1, -1)
             face_features = normalize(scale_face.transform(face_features))
             preds_face = clf_face.predict_proba(face_features)[:, 1]
 
         if self.mode == 'face':
-            X_lime = np.append(X[:, :2622], face_features, axis=0)
+            X_lime = np.append(X[:, :self._facial_feature_extractor.face_vector_size], face_features, axis=0)
             clf = clf_face
             preds_both, preds_hpo = None, None
         elif self.mode == 'hpo':
@@ -313,13 +359,17 @@ class PhenoScorer:
 
             preds_both = clf.predict_proba(np.append(face_features, hpo_features, axis=1))[:, 1]
 
-        exp_face, local_pred_face, exp_hpo, local_pred_hpo = explain_prediction(X_lime, len(X_lime) - 1, clf,
-                                                                                scale_face, scale_hpo, hpo_terms_pt,
-                                                                                hpo_terms_cont,
-                                                                                self._simscorer,
-                                                                                self._simscorer.name_to_id_and_reverse,
-                                                                                img, n_iter=lime_iter)
-        self.vus_results = [preds_both, preds_hpo, preds_face, exp_face, exp_hpo, img]
+        if lime_iter > 0:
+            exp_face, local_pred_face, exp_hpo, local_pred_hpo = explain_prediction(X_lime, len(X_lime) - 1, clf,
+                                                                                    scale_face, scale_hpo, hpo_terms_pt,
+                                                                                    hpo_terms_cont,
+                                                                                    self._simscorer,
+                                                                                    self._simscorer.name_to_id_and_reverse,
+                                                                                    img, n_iter=lime_iter,
+                                                                                    facial_feature_extractor=self._facial_feature_extractor)
+            self.vus_results = [preds_both, preds_hpo, preds_face, exp_face, exp_hpo, img]
+        else:
+            self.vus_results = [preds_both, preds_hpo, preds_face, img]
         return self
 
     def gen_vus_figure(self, filename):
@@ -338,40 +388,51 @@ class PhenoScorer:
         """
         [preds_both, preds_hpo, preds_face, exp_faces_all, exp_hpos_all, img] = self.vus_results
 
-        fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-        axs = axs.flatten()
-
-        fig = get_heatmap_from_multiple(exp_faces_all, fig, axs[0], get_norm_image(img)[0], 0.6)
-        axs[0].set_title('Face: ' + str(np.round(preds_face, 2)), fontsize=18, fontweight='bold')
-
-        df_summ_hpo = get_top_HPO([exp_hpos_all], False)
-
-        axs[1].set_title('HPO: ' + str(np.round(preds_hpo, 2)), fontsize=18, fontweight='bold')
-
-        df_summ_hpo = df_summ_hpo.sort_values('corr', ascending=False)
-
-        if len(df_summ_hpo) > 0:
-            g = sns.barplot(x=df_summ_hpo['corr'], y=list(df_summ_hpo.index), color='blue', alpha=0.6, ax=axs[1])
-
-            for bar in g.patches:
-                if bar.get_width() < 0:
-                    bar.set_color('red')
-            df_summ_hpo = df_summ_hpo.reset_index(drop=True)
-            for y in range(len(df_summ_hpo)):
-                axs[1].text(0, y, df_summ_hpo.loc[y, 'hpo'] + ' = ' + str(int(df_summ_hpo.loc[y, 'positive'])),
-                            fontsize=12, horizontalalignment='center', verticalalignment='center',
-                            fontweight='semibold')
-            axs[1].set_xlabel('LIME regression coefficient')
-
-            axs[1].set_xlim(-0.25, 0.25)
-            axs[1].set_yticks([])
+        if self.mode == 'both':
+            fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+            axs = axs.flatten()
         else:
-            axs[1].text(0.25, 0.5, 'No relevant features found')
-        axs[1].axes.yaxis.set_visible(False)
-        axs[1].spines['left'].set_visible(False)
-        axs[1].spines['right'].set_visible(False)
-        axs[1].spines['top'].set_visible(False)
-        fig.suptitle('PhenoScore: ' + str(np.round(preds_both, 2)), fontsize=20, fontweight='bold')
+            fig, axs = plt.subplots(1, 1, figsize=(6, 5))
+            axs = np.array([axs])
+
+        if self.mode == 'face' or self.mode == 'both':
+            fig = get_heatmap_from_multiple(exp_faces_all, fig, axs[0], self._facial_feature_extractor.get_norm_image(img),
+                                            0.6, self._facial_feature_extractor.input_image_size)
+            axs[0].set_title('Face: ' + str(np.round(np.mean(preds_face), 2)), fontsize=18, fontweight='bold')
+
+        if self.mode == 'hpo' or self.mode == 'both':
+            if type(exp_hpos_all) == list:
+                df_summ_hpo = get_top_HPO(exp_hpos_all, False)
+            else:
+                df_summ_hpo = get_top_HPO([exp_hpos_all], False)
+
+            axs[-1].set_title('HPO: ' + str(np.round(np.mean(preds_hpo), 2)), fontsize=18, fontweight='bold')
+
+            df_summ_hpo = df_summ_hpo.sort_values('corr', ascending=False)
+
+            if len(df_summ_hpo) > 0:
+                g = sns.barplot(x=df_summ_hpo['corr'], y=list(df_summ_hpo.index), color='blue', alpha=0.6, ax=axs[-1])
+
+                for bar in g.patches:
+                    if bar.get_width() < 0:
+                        bar.set_color('red')
+                df_summ_hpo = df_summ_hpo.reset_index(drop=True)
+                for y in range(len(df_summ_hpo)):
+                    axs[-1].text(0, y, df_summ_hpo.loc[y, 'hpo'] + ' = ' + str(int(df_summ_hpo.loc[y, 'positive'])),
+                                fontsize=12, horizontalalignment='center', verticalalignment='center',
+                                fontweight='semibold')
+                axs[-1].set_xlabel('LIME regression coefficient')
+
+                axs[-1].set_xlim(-0.25, 0.25)
+                axs[-1].set_yticks([])
+            else:
+                axs[-1].text(0.25, 0.5, 'No relevant features found')
+            axs[-1].axes.yaxis.set_visible(False)
+            axs[-1].spines['left'].set_visible(False)
+            axs[-1].spines['right'].set_visible(False)
+            axs[-1].spines['top'].set_visible(False)
+        if self.mode == 'both':
+            fig.suptitle('PhenoScore: ' + str(np.round(np.mean(preds_both), 2)), fontsize=20, fontweight='bold')
         fig.savefig(filename, dpi=300, bbox_inches='tight')
         print("Figure saved as " + filename)
         plt.show()

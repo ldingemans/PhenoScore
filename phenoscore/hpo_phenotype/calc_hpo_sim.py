@@ -158,7 +158,10 @@ class SimScorer:
             else:
                 if self.name_to_id_and_reverse[term] in self.hpo_network.nodes():
                     terms_b_proc.append(self.name_to_id_and_reverse[term])
-        return self.scorer.score_term_sets_basic(terms_a_proc, terms_b_proc)
+        result = self.scorer.score_term_sets_basic(terms_a_proc, terms_b_proc)
+        if np.isnan(result):
+            result = 0
+        return result
 
     def calc_full_sim_mat(self, X, mlb=None):
         """

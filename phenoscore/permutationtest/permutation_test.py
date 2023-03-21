@@ -54,7 +54,6 @@ class PermutationTester:
             AROC of the real classifier
         """
         bs_losses = []
-        y_bar = np.mean(y)
 
         if X.ndim == 1:
             X = X.reshape(-1, 1)
@@ -68,39 +67,11 @@ class PermutationTester:
         emp_loss, emp_loss_auc = brier_score_loss(y_real, y_pred), roc_auc_score(y_real, y_pred)
         pbar.update(1)
         for b in range(self._bootstraps):
-            y_random = self._generate_random_y(y_bar, len(y))
+            y_random = np.random.permutation(y)
             y_real, y_pred, y_ind = get_loss(X, y_random, self._simscorer, self._mode, sim_mat)
             bs_losses.append(brier_score_loss(y_real, y_pred))
             pbar.update(1)
         return emp_loss, np.array(bs_losses), emp_loss_auc
-
-    def _generate_random_y(self, y_mean, size):
-        """
-        Shuffle y labels, while keeping the same ratio of positive and negative classes
-
-
-        Parameters
-        ----------
-        y_mean: float
-            Ratio of positive and negative classes to obtain
-        size: int
-            Length of shuffled y labels
-
-        Returns
-        -------
-        y_rand: numpy array
-            Shuffled y labels
-        """
-        import itertools
-        if size < 10:
-            y_rand = np.array(list(itertools.product([0, 1], repeat=size)))
-        else:
-            y_rand = np.random.binomial(1, y_mean, size=(1000, size))
-        y_rand = y_rand[np.mean(y_rand, axis=1) == y_mean]
-        y_rand = np.random.permutation(y_rand)[0]
-
-        assert (len(y_rand) == size)
-        return y_rand
 
     def permutation_test_multiple_X(self, X, y):
         """
@@ -113,7 +84,7 @@ class PermutationTester:
             List of arrays of size n x 2623 of the original patients and controls of the suspected syndrome: the
             VGG-Face2 feature vector and one cell with a list of the HPO IDs.
             This can be used if we are resampling from a control database for instance multiple times.
-        y: numpy array
+        y: list
             The y labels
 
         Returns
@@ -129,11 +100,6 @@ class PermutationTester:
         classifier_aucs: list
             AROC scores of the classifier on the real/unpermuted data
         """
-        if np.mean(y) != 0.5:
-            print(
-                "WARNING: the dataset is imbalanced. This permutation test has not been validated for imbalanced "
-                "datasets, it is therefore recommended to undersample the majority class. "
-                "The test will however continue now.")
 
         bootstrapped_results = []
         classifier_results = []
@@ -143,7 +109,12 @@ class PermutationTester:
         pbar = tqdm(total=len(X) * self._bootstraps + len(X))
 
         for z in range(len(X)):
-            acc, random_losses, auc = self._c2st(X[z], y, pbar)
+            acc, random_losses, auc = self._c2st(X[z], y[z], pbar)
+            if np.mean(y[z]) != 0.5:
+                print(
+                    "WARNING: the dataset is imbalanced. This permutation test has not been validated for imbalanced "
+                    "datasets, it is therefore recommended to undersample the majority class. "
+                    "The test will however continue now.")
 
             classifier_results.append(acc)
             classifier_aucs.append(auc)
