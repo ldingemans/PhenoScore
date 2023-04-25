@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import ast
 import os
-
+os.environ["MXNET_SUBGRAPH_VERBOSE"] = "1"
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib as mpl
