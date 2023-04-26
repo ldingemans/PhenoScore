@@ -28,7 +28,7 @@ jobs:
             pip install .
             python -m ipykernel install --user --name run-notebook --display-name "Run notebook"
             pip uninstall -y numpy
-            pip install -y numpy
+            pip install numpy
         - name: Run notebooks
           run: |
             jupyter execute --kernel_name run-notebook notebooks/tutorial.ipynb
