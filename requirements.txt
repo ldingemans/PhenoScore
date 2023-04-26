@@ -3,7 +3,7 @@ tqdm==4.64.1
 deepface==0.0.75
 scikit-learn==1.2.0
 obonet==0.3.0
-phenopy
+phenopy @ git+https://github.com/ldingemans/phenopy.git@2d6586ef87f2581b32c163c704f3bba0a1daba43
 openpyxl==3.0.10
 seaborn==0.12.0
 scipy==1.9.1
