@@ -92,13 +92,13 @@ class SimScorer:
         """
         # files used in building the annotated HPO network
         try:
-            phenopy_data_directory = os.path.join(os.environ.get('CONDA_PREFIX'), '.phenopy/data')
+            phenopy_data_directory = os.path.join(os.getenv('HOME'), '.phenopy/data')
             obo_file = os.path.join(phenopy_data_directory, 'hp.obo')
             disease_to_phenotype_file = os.path.join(phenopy_data_directory, 'phenotype.hpoa')
             hpo_network, alt2prim, disease_records = generate_annotated_hpo_network(obo_file,
                                                                                     disease_to_phenotype_file, )
         except:
-            phenopy_data_directory = os.path.join(os.getenv('HOME'), '.phenopy/data')
+            phenopy_data_directory = os.path.join(os.environ.get('CONDA_PREFIX'), '.phenopy/data')
             obo_file = os.path.join(phenopy_data_directory, 'hp.obo')
             disease_to_phenotype_file = os.path.join(phenopy_data_directory, 'phenotype.hpoa')
             hpo_network, alt2prim, disease_records = generate_annotated_hpo_network(obo_file,
