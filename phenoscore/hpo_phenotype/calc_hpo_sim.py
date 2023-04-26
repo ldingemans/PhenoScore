@@ -91,18 +91,11 @@ class SimScorer:
             Scorer object that can be used to calculate semantic similarity between lists of HPO terms
         """
         # files used in building the annotated HPO network
-        try:
-            phenopy_data_directory = os.path.join(os.getenv('HOME'), '.phenopy/data')
-            obo_file = os.path.join(phenopy_data_directory, 'hp.obo')
-            disease_to_phenotype_file = os.path.join(phenopy_data_directory, 'phenotype.hpoa')
-            hpo_network, alt2prim, disease_records = generate_annotated_hpo_network(obo_file,
-                                                                                    disease_to_phenotype_file, )
-        except:
-            phenopy_data_directory = os.path.join(os.environ.get('CONDA_PREFIX'), '.phenopy/data')
-            obo_file = os.path.join(phenopy_data_directory, 'hp.obo')
-            disease_to_phenotype_file = os.path.join(phenopy_data_directory, 'phenotype.hpoa')
-            hpo_network, alt2prim, disease_records = generate_annotated_hpo_network(obo_file,
-                                                                                    disease_to_phenotype_file, )
+        phenopy_data_directory = os.path.join(os.path.expanduser("~"), '.phenopy', 'data')
+        obo_file = os.path.join(phenopy_data_directory, 'hp.obo')
+        disease_to_phenotype_file = os.path.join(phenopy_data_directory, 'phenotype.hpoa')
+        hpo_network, alt2prim, disease_records = generate_annotated_hpo_network(obo_file,
+                                                                                disease_to_phenotype_file, )
 
         url = 'http://purl.obolibrary.org/obo/hp.obo'
         full_hpo_graph = obonet.read_obo(url)
