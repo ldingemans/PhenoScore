@@ -26,6 +26,7 @@ jobs:
           run: |
             python -m pip install --upgrade pip jupyter
             pip install .
+            pip install --upgrade --force-reinstall numpy==1.19.5
             python -m ipykernel install --user --name run-notebook --display-name "Run notebook"
 
         - name: Run notebooks

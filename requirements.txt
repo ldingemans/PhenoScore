@@ -1,10 +1,9 @@
-numpy==1.19.5
 tensorflow==2.5.0
 tqdm==4.64.1
 deepface==0.0.75
 scikit-learn==1.2.0
 obonet==0.3.0
-phenopy @ git+https://github.com/ldingemans/phenopy.git@40248c3a509e98cd9bbcd4ff56f7b1b18365567f
+phenopy @ git+https://github.com/ldingemans/phenopy.git@9f0763237156b903b9f3f6d69f3baef314467c48
 openpyxl==3.0.10
 seaborn==0.12.0
 scipy==1.9.1
@@ -16,4 +15,4 @@ pillow~=9.2.0
 torch==1.13.0
 torchvision==0.14.0
 menpo==0.11.0
-mxnet==1.9.1
+mxnet==1.91
