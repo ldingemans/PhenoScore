@@ -14,7 +14,7 @@ jobs:
         fail-fast: false
         matrix:
           os: [ ubuntu-latest ]
-          python: [ "3.9" ]
+          python: [ "3.8" ]
 
       steps:
         - uses: actions/checkout@v2
@@ -26,7 +26,6 @@ jobs:
           run: |
             python -m pip install --upgrade pip jupyter
             pip install .
-            pip install numpy==1.21.5
             python -m ipykernel install --user --name run-notebook --display-name "Run notebook"
 
         - name: Run notebooks
