@@ -2,7 +2,7 @@ tensorflow==2.5.0
 tqdm==4.64.1
 deepface==0.0.75
 scikit-learn==1.2.0
-pandas==0.13.1
+pandas==1.0.0
 obonet==0.3.0
 gensim~=3.7.0
 phenopy @ git+https://github.com/ldingemans/phenopy.git@9f0763237156b903b9f3f6d69f3baef314467c48
