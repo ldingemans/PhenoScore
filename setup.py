@@ -9,7 +9,7 @@ with open("README.md", 'r') as fh:
     long_description = fh.read()
 
 setup(name='phenoscore',
-      version='0.1.0',
+      version='1.0.0',
       packages=find_packages(),
       install_requires=requirements,
 
@@ -25,8 +25,4 @@ setup(name='phenoscore',
                   'phenotypic similarity at both the level of individual patients as well as of cohorts.',
       license='GNU General Public License v3.0',
       keywords='machine learning, artificial intelligence, genetics, clinical genetics',
-
-      # entry_points={'console_scripts': [
-          # 'c2s2 = c2s2.main:main'
-      # ]}
       )
