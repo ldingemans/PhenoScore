@@ -19,6 +19,7 @@ Install the needed dependencies using the requirements file:
 You might need to reinstall ``numpy`` because of some compatibility issues, with:
 
 `pip uninstall numpy`
+
 `pip install numpy==1.23.5`
 
 # Optional:
