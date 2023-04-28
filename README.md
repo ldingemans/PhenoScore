@@ -16,7 +16,12 @@ Install the needed dependencies using the requirements file:
 
 `pip install -r requirements.txt`
 
-## Optional:
+You might need to reinstall ``numpy`` because of some compatibility issues, with:
+
+`pip uninstall numpy`
+`pip install numpy==1.23.5`
+
+# Optional:
 To use the GPU (about a 10x performance increase when doing the LIME predictions) when CUDA is installed:
 
 `conda install cudnn`
