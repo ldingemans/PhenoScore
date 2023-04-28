@@ -26,6 +26,8 @@ jobs:
           run: |
             python -m pip install --upgrade pip jupyter
             pip install .
+            pip uninstall -y numpy
+            pip install numpy
             python -m ipykernel install --user --name run-notebook --display-name "Run notebook"
         - name: Run notebooks
           run: |
