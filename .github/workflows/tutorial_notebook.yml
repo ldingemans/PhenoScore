@@ -26,8 +26,9 @@ jobs:
           run: |
             python -m pip install --upgrade pip jupyter
             pip install .
+            pip uninstall -y numpy
+            pip install numpy==1.23.5
             python -m ipykernel install --user --name run-notebook --display-name "Run notebook"
-
         - name: Run notebooks
           run: |
             jupyter execute --kernel_name run-notebook notebooks/tutorial.ipynb

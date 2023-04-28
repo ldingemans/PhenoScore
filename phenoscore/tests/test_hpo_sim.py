@@ -15,7 +15,7 @@ class SimScorerTester(unittest.TestCase):
         hpo_ids = []
         for i in range(len(random_data_csv)):
             hpo_ids.append(ast.literal_eval(random_data_csv.loc[i, 'hpo_all']))
-        self._hpo_ids = np.array(hpo_ids).reshape(-1, 1)
+        self._hpo_ids = np.array(hpo_ids, dtype=object).reshape(-1, 1)
         self._simscorer = SimScorer(scoring_method='Resnik', sum_method='BMA')
 
     def test_get_graph(self):
