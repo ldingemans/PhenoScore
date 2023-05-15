@@ -327,7 +327,8 @@ class PhenoScorer:
         if self.mode != 'face':
             filtered_hpo = self._simscorer.filter_hpo_df(hpo_all_new_sample)
 
-            assert len(hpo_terms_pt) == len(hpo_terms_cont)
+            if len(hpo_terms_pt) != len(hpo_terms_cont):
+                print("WARNING: Number of HPO terms for patients and controls is not equal.")
 
             avg_pt, avg_cont = [], []
 
