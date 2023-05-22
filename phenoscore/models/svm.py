@@ -181,7 +181,7 @@ def svm_class(X_train, y_train, X_test):
 
     if len(X_train) < 10:
         param_grid = {'C': [1e-3, 1, 1e3]}
-        clf = GridSearchCV(LogisticRegression(penalty='l1', max_iter=1000000, solver='liblinear'),
+        clf = GridSearchCV(LogisticRegression(max_iter=1000000, solver='liblinear'),
                            param_grid, cv=LeaveOneOut(), n_jobs=-1, scoring='neg_brier_score')
     else:
         param_grid = {'C': [1e-5, 1e-3, 1, 1e3, 1e5]}
