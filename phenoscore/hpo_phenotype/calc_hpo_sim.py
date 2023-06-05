@@ -7,6 +7,7 @@ import pandas as pd
 import copy
 import obonet
 
+
 class SimScorer:
     def __init__(self, scoring_method='Resnik', sum_method='BMA'):
         """
@@ -97,8 +98,8 @@ class SimScorer:
         hpo_network, alt2prim, disease_records = generate_annotated_hpo_network(obo_file,
                                                                                 disease_to_phenotype_file, )
 
-        url = 'http://purl.obolibrary.org/obo/hp.obo'
-        full_hpo_graph = obonet.read_obo(url)
+        file_path = os.path.join(os.path.expanduser("~"), '.phenopy', 'data', 'hp.obo')
+        full_hpo_graph = obonet.read_obo(file_path)
 
         #the phenopy hpo_network does not included some terms like inheritance etc since they are not phenotypes
         #for name/id to name/id dict we need all
