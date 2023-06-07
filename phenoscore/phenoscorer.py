@@ -325,6 +325,7 @@ class PhenoScorer:
             get_clf(original_X, original_y, self._simscorer, self.mode, None)
 
         if self.mode != 'face':
+
             filtered_hpo = self._simscorer.filter_hpo_df(hpo_all_new_sample)
 
             if len(hpo_terms_pt) != len(hpo_terms_cont):
@@ -333,8 +334,10 @@ class PhenoScorer:
             avg_pt, avg_cont = [], []
 
             for i in range(len(hpo_terms_pt)):
-                avg_pt.append(self._simscorer.calc_similarity(filtered_hpo, self._simscorer.filter_hpo_df(hpo_terms_pt[i])))
-                avg_cont.append(self._simscorer.calc_similarity(filtered_hpo, self._simscorer.filter_hpo_df(hpo_terms_cont[i])))
+                hpo_terms_pt[i], hpo_terms_cont[i] = self._simscorer.filter_hpo_df(
+                    hpo_terms_pt[i]), self._simscorer.filter_hpo_df(hpo_terms_cont[i])
+                avg_pt.append(self._simscorer.calc_similarity(filtered_hpo, hpo_terms_pt[i]))
+                avg_cont.append(self._simscorer.calc_similarity(filtered_hpo, hpo_terms_cont[i]))
 
             hpo_features = np.array([[np.mean(avg_pt), np.mean(avg_cont)]])
             hpo_features = scale_hpo.transform(hpo_features)
