@@ -9,7 +9,7 @@ with open("README.md", 'r') as fh:
     long_description = fh.read()
 
 setup(name='phenoscore',
-      version='1.0.1',
+      version='1.0.2',
       packages=find_packages(),
       install_requires=requirements,
 
