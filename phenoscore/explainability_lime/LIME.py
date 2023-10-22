@@ -261,7 +261,7 @@ def explain_prediction(X, index_pt, clf, scale_face=None, scale_hpo=None, hpo_te
         aligned_image = facial_feature_extractor.get_norm_image(img_path_index_patient)
         for m in range(n_iter):
             try:
-                explanation = explainer.explain_instance(aligned_image, predict_image, num_samples=200, batch_size=100,
+                explanation = explainer.explain_instance(aligned_image, predict_image, num_samples=200, batch_size=50,
                                                          segmentation_fn=segmentation_fn, classifier_args=classifier_args)
                 exp_face.append(explanation)
                 local_pred_face.append(explanation.local_pred[0])
