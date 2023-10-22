@@ -197,14 +197,14 @@ class PhenoScorer:
             axs = np.array([axs])
 
         df_exp = pd.DataFrame()
-        df_exp['hpo_pred'] = np.array(self.lime_results.loc[0, 'hpo_pred'])
-        df_exp['face_pred'] = np.array(self.lime_results.loc[0, 'face_pred'])
+        df_exp['hpo_pred'] = np.array(self.lime_results.loc[0, 'hpo_pred'], dtype=object)
+        df_exp['face_pred'] = np.array(self.lime_results.loc[0, 'face_pred'], dtype=object)
         for i in range(len(df_exp)):
             if type(df_exp.loc[i, 'face_pred']) == list:
                 df_exp.loc[i, 'face_pred'] = np.mean(df_exp.loc[i, 'face_pred'])
         df_exp['svm_pred'] = np.array(self.lime_results.loc[0, 'svm_preds'])
-        df_exp['hpo_exp'] = np.array(self.lime_results.loc[0, 'hpo_explanation'])
-        df_exp['face_exp'] = np.array(self.lime_results.loc[0, 'face_explanation'])
+        df_exp['hpo_exp'] = np.array(self.lime_results.loc[0, 'hpo_explanation'], dtype=object)
+        df_exp['face_exp'] = np.array(self.lime_results.loc[0, 'face_explanation'], dtype=object)
         df_exp['y_true'] = np.array(self.lime_results.loc[0, 'y_real'])
 
         if self.mode == 'face' or self.mode == 'both':
