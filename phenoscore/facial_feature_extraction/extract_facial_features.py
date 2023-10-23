@@ -100,15 +100,18 @@ class VGGFaceExtractor(FacialFeatureExtractor):
 
 
 class QMagFaceExtractor(FacialFeatureExtractor):
-    def __init__(self, path_to_dir):
+    def __init__(self, path_to_dir, use_cpu='auto'):
         """
         Constructor
         """
-        devices = tf.config.list_physical_devices('GPU')
-        if len(devices) == 0:
-            self._use_cpu = True
+        if use_cpu == 'auto':
+            devices = tf.config.list_physical_devices('GPU')
+            if len(devices) == 0:
+                self._use_cpu = True
+            else:
+                self._use_cpu = False
         else:
-            self._use_cpu = False
+            self._use_cpu = use_cpu
         self.face_vector_size = 512
         self.input_image_size = (112, 112)
         self._path_to_dir = path_to_dir
