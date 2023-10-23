@@ -18,7 +18,8 @@ from sklearn.preprocessing import normalize
 
 
 class PhenoScorer:
-    def __init__(self, gene_name, mode, method_hpo_similarity='Resnik', method_summ_hpo_similarities='BMA', face_module='VGGFace'):
+    def __init__(self, gene_name, mode, method_hpo_similarity='Resnik', method_summ_hpo_similarities='BMA',
+                 face_module='VGGFace', use_cpu='auto'):
         """
         Constructor
 
@@ -36,12 +37,21 @@ class PhenoScorer:
             Can be BMA, BMWA, or maximum.
         face_module: str
             Method to extract facial features, default is VGGFace, can be QMagFace as well
+        use_cpu: str
+            Can be auto (use GPU when available, otherwise fall back to CPU), True (use CPU) or False (use GPU).
         """
-        devices = tf.config.list_physical_devices('GPU')
-        if len(devices) == 0:
-            print('Using CPU, since no GPUs are found!')
-        else:
-            print('Using GPUs:' + str(devices))
+        if use_cpu == 'auto':
+            devices = tf.config.list_physical_devices('GPU')
+            if len(devices) == 0:
+                print('Using CPU, since no GPUs are found!')
+            else:
+                print('Using GPUs:' + str(devices))
+        elif use_cpu:
+            print('Using CPU.')
+        elif not use_cpu:
+            print('Force using GPU. Set use_cpu to auto if you want to fallback to CPU if GPU not detected.')
+        else: 
+            ValueError('Invalid value for use_cpu.')
 
         assert ((mode == 'both') or (mode == 'face') or (mode == 'hpo'))
 
@@ -59,7 +69,7 @@ class PhenoScorer:
                 path_to_script = os.path.realpath(__file__).split(os.sep)[:-1]
                 path_to_script.insert(1, os.sep)
                 path_to_qmagface = os.path.join(*path_to_script, 'facial_feature_extraction')
-                self._facial_feature_extractor = QMagFaceExtractor(path_to_dir=path_to_qmagface)
+                self._facial_feature_extractor = QMagFaceExtractor(path_to_dir=path_to_qmagface, use_cpu=use_cpu)
             else:
                 ValueError('Invalid facial recognition module chosen')
         else:
