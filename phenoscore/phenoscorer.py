@@ -168,7 +168,7 @@ class PhenoScorer:
         self.lime_results = cross_val_and_limer.results
         return self
 
-    def gen_lime_and_results_figure(self, bg_image, df_data, filename, bubble_plot=False, lime_iterations=1):
+    def gen_lime_and_results_figure(self, bg_image, df_data, filename, bubble_plot=False, lime_iterations=1, score=None):
         """
         Plot the LIME and results figure of the paper
 
@@ -186,6 +186,8 @@ class PhenoScorer:
         lime_iterations: int
             If your lime results are actually result of multiple iterations, specify the number here.
             It is only used to correct the n in the figures by dividing by the number of iterations.
+        score: list
+            Scores to display above the plots: if None, will autodetect from the results.
         """
         if self.lime_results is None:
             raise ValueError("Please run get_lime first to obtain LIME results.")
@@ -195,9 +197,14 @@ class PhenoScorer:
         if self.mode == 'face' or self.mode == 'both':
             mean_face_norm = self._facial_feature_extractor.get_norm_image(bg_image)
 
-        score_aroc_both = np.round(self.lime_results.loc[0, 'roc_both_svm'], 2)
-        score_aroc_face = np.round(self.lime_results.loc[0, 'roc_face_svm'], 2)
-        score_aroc_hpo = np.round(self.lime_results.loc[0, 'roc_hpo_svm'], 2)
+        if score is None:
+            score_aroc_both = np.round(self.lime_results.loc[0, 'roc_both_svm'], 2)
+            score_aroc_face = np.round(self.lime_results.loc[0, 'roc_face_svm'], 2)
+            score_aroc_hpo = np.round(self.lime_results.loc[0, 'roc_hpo_svm'], 2)
+        else:
+            score_aroc_both = score[0]
+            score_aroc_face = score[1]
+            score_aroc_hpo = score[2]
 
         if self.mode == 'both':
             fig, axs = plt.subplots(1, 2, figsize=(12, 5))
