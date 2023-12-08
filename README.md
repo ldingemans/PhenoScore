@@ -16,7 +16,11 @@ Install the needed dependencies using the requirements file:
 
 `pip install -r requirements.txt`
 
-If you get a ``numpy`` error, reinstall ``numpy`` because of some compatibility issues, with:
+And then install PhenoScore itself:
+
+``pip install .``
+
+If you get a ``numpy`` error when importing the module, reinstall ``numpy`` because of some compatibility issues, with:
 
 `pip uninstall numpy`
 
