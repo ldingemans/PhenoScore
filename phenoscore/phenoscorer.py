@@ -3,7 +3,6 @@ import numpy as np
 import ast
 import os
 os.environ["MXNET_SUBGRAPH_VERBOSE"] = "0"
-import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import seaborn as sns
@@ -15,11 +14,12 @@ from phenoscore.explainability_lime.LIME import explain_prediction
 from phenoscore.facial_feature_extraction.extract_facial_features import VGGFaceExtractor, QMagFaceExtractor
 from phenoscore.models.svm import get_clf
 from sklearn.preprocessing import normalize
+import torch
 
 
 class PhenoScorer:
     def __init__(self, gene_name, mode, method_hpo_similarity='Resnik', method_summ_hpo_similarities='BMA',
-                 face_module='VGGFace', use_cpu='auto'):
+                 face_module='QMagFace', use_cpu='auto'):
         """
         Constructor
 
@@ -36,13 +36,13 @@ class PhenoScorer:
             Method to summarize the HPO term similarities.
             Can be BMA, BMWA, or maximum.
         face_module: str
-            Method to extract facial features, default is VGGFace, can be QMagFace as well
+            Method to extract facial features, default is QMagFace
         use_cpu: str
             Can be auto (use GPU when available, otherwise fall back to CPU), True (use CPU) or False (use GPU).
         """
         if use_cpu == 'auto':
-            devices = tf.config.list_physical_devices('GPU')
-            if len(devices) == 0:
+            devices = torch.cuda.device_count()
+            if devices == 0:
                 print('Using CPU, since no GPUs are found!')
             else:
                 print('Using GPUs:' + str(devices))
