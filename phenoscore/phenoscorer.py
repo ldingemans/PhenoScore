@@ -3,6 +3,7 @@ import numpy as np
 import ast
 import os
 os.environ["MXNET_SUBGRAPH_VERBOSE"] = "0"
+os.environ['HOME'] = os.environ.get('CONDA_PREFIX')
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import seaborn as sns
