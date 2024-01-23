@@ -1,7 +1,4 @@
-from deepface import DeepFace
 import os
-from deepface.DeepFace import build_model
-from deepface.commons import functions
 import sys
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from QMagFace.preprocessing.insightface.src.mtcnn_detector import MtcnnDetector
@@ -13,8 +10,8 @@ import torch
 import torchvision.transforms
 from collections import namedtuple
 import io
-import tensorflow as tf
 import urllib.request
+
 
 class FacialFeatureExtractor:
     def __init__(self):
@@ -40,64 +37,6 @@ class FacialFeatureExtractor:
     def predict_aligned_img(self, X_face):
         pass
 
-class VGGFaceExtractor(FacialFeatureExtractor):
-    def __init__(self):
-        """
-        Constructor
-        """
-        self.face_vector_size = 2622
-        self.input_image_size = (224, 224)
-        self.build_model = build_model("VGG-Face")
-        pass
-
-    def process_file(self, path_to_img):
-        """
-        Extract facial features for an image
-
-        Parameters
-        ----------
-        path_to_img: str
-            Path to image to process
-        """
-        try:
-            result = DeepFace.represent(path_to_img, model_name='VGG-Face', detector_backend='mtcnn')
-        except ValueError as e:
-            if 'Face could not be detected.' in str(e):
-                result = None
-            else:
-                raise e
-        return result
-
-    @staticmethod
-    def get_norm_image(img_path):
-        """
-        Preprocess the image for VGG-Face, using MTCNN (detect face, alignment, etc)
-
-        Parameters
-        ----------
-        img_path: str
-            Path to the image to process
-
-        Returns
-        -------
-        img_tensor: numpy array
-            The preprocessed image in array form
-        """
-        input_shape_x, input_shape_y = 224, 224
-
-        img = functions.preprocess_face(img=img_path
-                                        , target_size=(input_shape_y, input_shape_x)
-                                        , enforce_detection=False
-                                        , detector_backend='mtcnn'
-                                        , align=True,
-                                        )
-
-        img_tensor = functions.normalize_input(img=img, normalization='base')
-        return img_tensor[0]
-
-    def predict_aligned_img(self, X_face):
-        return self.build_model.predict(X_face, verbose=False)
-
 
 class QMagFaceExtractor(FacialFeatureExtractor):
     def __init__(self, path_to_dir, use_cpu='auto'):
@@ -105,8 +44,8 @@ class QMagFaceExtractor(FacialFeatureExtractor):
         Constructor
         """
         if use_cpu == 'auto':
-            devices = tf.config.list_physical_devices('GPU')
-            if len(devices) == 0:
+            devices = torch.cuda.device_count()
+            if devices == 0:
                 self._use_cpu = True
             else:
                 self._use_cpu = False
