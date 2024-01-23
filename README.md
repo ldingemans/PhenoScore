@@ -12,13 +12,13 @@ Then, activate the environment
 
 `conda activate PhenoScore`
 
-Install the needed dependencies using the requirements file:
+Install PhenoScore and the needed dependencies:
 
-`pip install -r requirements.txt`
+`pip install .`
 
-If you get a ``numpy`` error, reinstall ``numpy`` because of some compatibility issues, with:
+To fix some dependency issues, especially on Windows, please then run these commands:
 
-`pip uninstall numpy`
+`pip install mxnet==1.7.0post2 --no-dependencies`
 
 `pip install numpy==1.23.5`
 
