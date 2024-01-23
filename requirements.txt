@@ -11,4 +11,5 @@ pillow~=9.2.0
 torch==1.13.0
 torchvision==0.14.0
 menpo
-mxnet==1.7.0.post2
+opencv-python==4.5.5.62
+click
