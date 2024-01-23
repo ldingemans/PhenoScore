@@ -11,7 +11,7 @@ from phenoscore.permutationtest.permutation_test import PermutationTester
 from phenoscore.permutationtest.cross_validation import CrossValidatorAndLIME
 from phenoscore.tables_and_figures.gen_tables_and_figs import get_top_HPO, get_heatmap_from_multiple
 from phenoscore.explainability_lime.LIME import explain_prediction
-from phenoscore.facial_feature_extraction.extract_facial_features import VGGFaceExtractor, QMagFaceExtractor
+from phenoscore.facial_feature_extraction.extract_facial_features import QMagFaceExtractor
 from phenoscore.models.svm import get_clf
 from sklearn.preprocessing import normalize
 import torch
