@@ -17,7 +17,7 @@ jobs:
       strategy:
         fail-fast: false
         matrix:
-          os: [  ubuntu-latest ]
+          os: [  ubuntu-latest, windows ]
           python: [ "3.9" ]
 
       steps:
@@ -31,6 +31,7 @@ jobs:
             python -m pip install --upgrade pip
             pip install .
             pip uninstall -y numpy
+            pip install mxnet==1.7.0post2 --no-dependencies
             pip install numpy==1.23.5
         - name: Run tests
           run: |
