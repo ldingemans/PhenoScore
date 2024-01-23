@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import normalize
-from deepface import DeepFace
 from lime import lime_image
 from sklearn.preprocessing import MultiLabelBinarizer
 import traceback
