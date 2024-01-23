@@ -5,7 +5,6 @@ phenopy==0.6.0
 openpyxl==3.0.10
 seaborn==0.12.0
 scipy==1.9.1
-networkx~=2.8.7
 matplotlib~=3.6.1
 lime @ git+https://github.com/ldingemans/lime.git@3365ccee00664263d3be903f7a34fa49676a8f42
 setuptools~=63.4.1
