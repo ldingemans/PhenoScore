@@ -1,6 +1,5 @@
 tqdm==4.64.1
 scikit-learn==1.2.0
-obonet==0.3.0
 phenopy==0.6.0
 openpyxl==3.0.10
 seaborn==0.12.0
