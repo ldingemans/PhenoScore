@@ -61,7 +61,7 @@ similar to the optimal functions of the others.
 The environment was tested with an RTX3080 on Windows 11.
 
 1. Download our precomputed MagFace embeddings and pairs files from [here](https://drive.google.com/file/d/1ElwkUKFs6-4JEwRnsKh6fJLp00x_FOvS/view?usp=sharing) and extract them in the QMagFace root directory. 
-2. Download the MagFace100 model from [here](https://drive.google.com/file/d/1Bd87admxOZvbIOAyTkGEntsEz3fyMt7H/view) and place it in the ``_models/magface_models/`` directory. 
+2. Download the MagFace100 model from [here](https://drive.google.com/file/d/1Bd87admxOZvbIOAyTkGEntsEz3fyMt7H/view) and place it in the ``models_qmag/magface_models/`` directory. 
 The file directory should look something like this:
 ```
 QMagFace
@@ -69,7 +69,7 @@ QMagFace
         ijb
         pairs
         single_images
-    _models
+    models_qmag
         magface_models
             magface_epoch_00025.pth
         mtcnn-model
@@ -92,7 +92,7 @@ python align_images.py -s path/to/source/images -r path/where/to/save/aligned/im
 ## Compute Embeddings
 Once we have a directory with aligned images we can use these images to compute our embeddings. To do so, run
 ```
-python embed_images.py -s path/to/aligned/images -r directory/where/to/save/embeddings -d dataset_name -m _models/magface_models/magface_epoch_00025.pth
+python embed_images.py -s path/to/aligned/images -r directory/where/to/save/embeddings -d dataset_name -m models_qmag/magface_models/magface_epoch_00025.pth
 ```
 
 ## Experiments
