@@ -1,8 +1,14 @@
+import os
+conda_prefix = os.environ.get('CONDA_PREFIX')
+if conda_prefix is not None:
+    os.environ['HOME'] = conda_prefix
+else:
+    os.environ['HOME'] = os.getcwd()
+print(os.environ['HOME'])
 import unittest
 from phenoscore.hpo_phenotype.calc_hpo_sim import SimScorer
 import pandas as pd
 import numpy as np
-import os
 import ast
 
 

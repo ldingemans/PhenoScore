@@ -6,6 +6,8 @@ os.environ["MXNET_SUBGRAPH_VERBOSE"] = "0"
 conda_prefix = os.environ.get('CONDA_PREFIX')
 if conda_prefix is not None:
     os.environ['HOME'] = conda_prefix
+else:
+    os.environ['HOME'] = os.getcwd()
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import seaborn as sns
