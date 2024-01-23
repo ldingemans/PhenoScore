@@ -66,9 +66,7 @@ class PhenoScorer:
         self.lime_results = None
         self._simscorer = SimScorer(scoring_method=method_hpo_similarity, sum_method=method_summ_hpo_similarities)
         if (mode == 'both') or (mode == 'face'):
-            if face_module == 'VGGFace':
-                self._facial_feature_extractor = VGGFaceExtractor()
-            elif face_module == 'QMagFace':
+            if face_module == 'QMagFace':
                 path_to_script = os.path.realpath(__file__).split(os.sep)[:-1]
                 path_to_script.insert(1, os.sep)
                 path_to_qmagface = os.path.join(*path_to_script, 'facial_feature_extraction')
