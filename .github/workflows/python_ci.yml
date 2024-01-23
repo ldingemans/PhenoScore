@@ -4,11 +4,11 @@ on:
     push:
       # Uncomment when we have `development` and remove `main`
 #      branches: [ development ]
-      branches: [ main ]
+      branches: [ main, develop ]
     pull_request:
       # Uncomment when we have `development`
-#      branches: [ main, development ]
-      branches: [ main ]
+      branches: [ main, develop ]
+      #branches: [ main ]
 
 jobs:
     build:
