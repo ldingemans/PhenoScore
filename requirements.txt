@@ -1,6 +1,4 @@
-tensorflow==2.5.0
 tqdm==4.64.1
-deepface==0.0.75
 scikit-learn==1.2.0
 obonet==0.3.0
 phenopy==0.6.0
