@@ -2,9 +2,9 @@ name: Run tutorial jupyter notebook
 
 on:
     push:
-      branches: [ development ]
+      branches: [ main, develop ]
     pull_request:
-      branches: [ main, development ]
+      branches: [ main, develop ]
 
 jobs:
     build:
