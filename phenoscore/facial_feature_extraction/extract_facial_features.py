@@ -55,13 +55,13 @@ class QMagFaceExtractor(FacialFeatureExtractor):
         self.input_image_size = (112, 112)
         self._path_to_dir = path_to_dir
         self._det = MtcnnDetector(
-            model_folder=os.path.join(self._path_to_dir, 'QMagFace', '_models', 'mtcnn-model'),
+            model_folder=os.path.join(self._path_to_dir, 'QMagFace', 'models_qmag', 'mtcnn-model'),
             accurate_landmark=True,
             minsize=50,
             threshold=[0.6, 0.7, 0.8]
         )
         Args = namedtuple('Args', ['arch', 'resume', 'embedding_size', 'cpu_mode'])
-        path_pretrained_weights = os.path.join(self._path_to_dir, 'QMagFace', '_models', 'magface_models', 'magface_epoch_00025.pth')
+        path_pretrained_weights = os.path.join(self._path_to_dir, 'QMagFace', 'models_qmag', 'magface_models', 'magface_epoch_00025.pth')
         args = Args('iresnet100', path_pretrained_weights, 512, self._use_cpu)
 
         # Check if the file already exists locally

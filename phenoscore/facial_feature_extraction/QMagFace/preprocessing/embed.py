@@ -30,7 +30,7 @@ class ImgDataset(data.Dataset):
 @click.command()
 @click.option('--result_dir', '-r', type=click.Path())
 @click.option('--source_dir', '-s', type=click.Path())
-@click.option('--model_path', '-m', type=click.Path(), default='_models/magface_models/magface_epoch_00025.pth')
+@click.option('--model_path', '-m', type=click.Path(), default='models_qmag/magface_models/magface_epoch_00025.pth')
 @click.option('--db', '-d', type=str)
 def main(result_dir, source_dir, model_path, db):
     os.makedirs(result_dir, exist_ok=True)

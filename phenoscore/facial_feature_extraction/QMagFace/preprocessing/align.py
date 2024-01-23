@@ -24,7 +24,7 @@ def preprocess(det, img):
 @click.command()
 @click.option('--result_dir', '-r', type=click.Path())
 @click.option('--source_dir', '-s', type=click.Path())
-@click.option('--model_path', '-m', type=click.Path(), default='_models/mtcnn-model/')
+@click.option('--model_path', '-m', type=click.Path(), default='models_qmag/mtcnn-model/')
 def main(result_dir, source_dir, model_path):
     os.makedirs(result_dir, exist_ok=True)
     det = MtcnnDetector(
