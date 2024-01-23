@@ -32,4 +32,4 @@ jobs:
             python -m ipykernel install --user --name run-notebook --display-name "Run notebook"
         - name: Run notebooks
           run: |
-            jupyter execute --kernel_name run-notebook notebooks/tutorial.ipynb
+            jupyter execute --kernel_name run-notebook --notebook-dir=phenoscore notebooks/tutorial.ipynb 
