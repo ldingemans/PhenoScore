@@ -4,7 +4,6 @@ if conda_prefix is not None:
     os.environ['HOME'] = conda_prefix
 else:
     os.environ['HOME'] = os.getcwd()
-print(os.environ['HOME'])
 import unittest
 from phenoscore.hpo_phenotype.calc_hpo_sim import SimScorer
 import pandas as pd
@@ -49,6 +48,6 @@ class SimScorerTester(unittest.TestCase):
         hpos['hpo_all'] = ''
         hpos.at[0,'hpo_all'] = ['HP:0011927', 'HP:0000708', 'HP:0000709', 'HP:0008771', 'HP:0001250']
         filtered_hpo = self._simscorer.filter_hpo_df(hpos)
-        print(filtered_hpo)
+        print("BLABLA" + str(filtered_hpo))
         assert filtered_hpo.loc[0, 'hpo_all'] == ['HP:0001250']
 
