@@ -13,6 +13,7 @@ import ast
 
 class SimScorerTester(unittest.TestCase):
     def setUp(self):
+        print("TESTTESTEST")
         try:
             random_data_csv = pd.read_excel(os.path.join('phenoscore', 'sample_data', 'random_generated_sample_data.xlsx'))
         except:
