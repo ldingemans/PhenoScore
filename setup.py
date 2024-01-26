@@ -13,7 +13,7 @@ setup(name='phenoscore',
       packages=find_packages(),
       install_requires=requirements,
 
-      package_data={'': ['test_data/*']},
+      package_data={'': ['facial_feature_extraction/QMagFace/models_qmag/mtcnn-model/*']},
       long_description=long_description,
       long_description_content_type='text/markdown',
 
