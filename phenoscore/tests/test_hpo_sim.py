@@ -13,7 +13,6 @@ import ast
 
 class SimScorerTester(unittest.TestCase):
     def setUp(self):
-        print("TESTTESTEST")
         try:
             random_data_csv = pd.read_excel(os.path.join('phenoscore', 'sample_data', 'random_generated_sample_data.xlsx'))
         except:
@@ -47,8 +46,7 @@ class SimScorerTester(unittest.TestCase):
     def test_filter_hpo_df(self):
         hpos = pd.DataFrame()
         hpos['hpo_all'] = ''
-        hpos.at[0,'hpo_all'] = ['HP:0011927', 'HP:0000708', 'HP:0000709', 'HP:0008771', 'HP:0001250']
+        hpos.at[0,'hpo_all'] = ['HP:0011927', 'HP:0000708', 'HP:0000735', 'HP:0000729', 'HP:0008771', 'HP:0001250']
         filtered_hpo = self._simscorer.filter_hpo_df(hpos)
-        print("BLABLA" + str(filtered_hpo))
         assert filtered_hpo.loc[0, 'hpo_all'] == ['HP:0001250']
 
