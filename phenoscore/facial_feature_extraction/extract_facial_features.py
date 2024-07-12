@@ -11,6 +11,8 @@ import torchvision.transforms
 from collections import namedtuple
 import io
 import urllib.request
+import pandas as pd
+import json
 
 
 class FacialFeatureExtractor:
@@ -145,3 +147,57 @@ class QMagFaceExtractor(FacialFeatureExtractor):
                 else:
                     embedding = self.build_model(all_inputs).to('cuda').cpu().numpy()
         return embedding
+
+
+class GestaltMatcherFaceExtractor(FacialFeatureExtractor):
+    def __init__(self, path_to_dir, use_cpu='auto'):
+        if use_cpu == 'auto':
+            devices = torch.cuda.device_count()
+            if devices == 0:
+                self._use_cpu = True
+            else:
+                self._use_cpu = False
+        else:
+            self._use_cpu = use_cpu
+        sys.path.append(os.path.join(path_to_dir))
+        sys.path.append(os.path.join(path_to_dir, 'GestaltEngine-FaceCropper-retinaface'))
+        from detect_pipe import init_model
+        from predict_ensemble import load_models
+
+        model_detect, device_detect = init_model(self._use_cpu)
+        models, device = load_models(self._use_cpu)
+
+        self._models, self._device, self._model_detect, \
+            self._device_detect = models, device, model_detect, device_detect
+        self.face_vector_size = 1536
+        self.input_image_size = (112, 112)
+        return
+
+    def process_file(self, path_to_img):
+        """
+        Extract facial features for an image
+
+        Parameters
+        ----------
+        path_to_img: str
+            Path to image to process
+        """
+        p_img = self.get_norm_image(path_to_img)
+        if p_img is not None:
+            embedding = self.predict_aligned_img(p_img)
+        else:
+            embedding = None
+        return embedding
+
+    def get_norm_image(self, path_to_img):
+        from detect_pipe import detect_pipe
+        from align_pipe import align_pipe
+        coords, img_rot = detect_pipe(path_to_img, self._model_detect, self._device_detect, self._use_cpu)
+        aligned_img = align_pipe(coords, img_rot)
+        return aligned_img
+
+    def predict_aligned_img(self, aligned_img):
+        from predict_ensemble import predict_memory
+        representation = np.array(predict_memory(self._models, self._device, aligned_img))
+        return np.concatenate([np.mean(representation[:4, :], axis=0), np.mean(representation[4:8, :], axis=0),
+                               np.mean(representation[8:, :], axis=0)])

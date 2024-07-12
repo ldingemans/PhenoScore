@@ -16,7 +16,7 @@ from phenoscore.permutationtest.permutation_test import PermutationTester
 from phenoscore.permutationtest.cross_validation import CrossValidatorAndLIME
 from phenoscore.tables_and_figures.gen_tables_and_figs import get_top_HPO, get_heatmap_from_multiple
 from phenoscore.explainability_lime.LIME import explain_prediction
-from phenoscore.facial_feature_extraction.extract_facial_features import QMagFaceExtractor
+from phenoscore.facial_feature_extraction.extract_facial_features import QMagFaceExtractor, GestaltMatcherFaceExtractor
 from phenoscore.models.svm import get_clf
 from sklearn.preprocessing import normalize
 import torch
@@ -73,6 +73,11 @@ class PhenoScorer:
                 path_to_script.insert(1, os.sep)
                 path_to_qmagface = os.path.join(*path_to_script, 'facial_feature_extraction')
                 self._facial_feature_extractor = QMagFaceExtractor(path_to_dir=path_to_qmagface, use_cpu=use_cpu)
+            elif face_module == 'GM-arc':
+                path_to_script = os.path.realpath(__file__).split(os.sep)[:-1]
+                path_to_script.insert(1, os.sep)
+                path_to_gm = os.path.join(*path_to_script, 'facial_feature_extraction', 'GestaltMatcher-arc')
+                self._facial_feature_extractor = GestaltMatcherFaceExtractor(path_to_dir=path_to_gm, use_cpu=use_cpu)
             else:
                 ValueError('Invalid facial recognition module chosen')
         else:
