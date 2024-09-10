@@ -1,15 +1,19 @@
-from phenopy.build_hpo import generate_annotated_hpo_network
-from phenopy.score import Scorer
 import networkx as nx
-import os
 import numpy as np
 import pandas as pd
-import copy
 import obonet
 
+import copy
+import os
+from typing import List, Tuple, Dict, Union
+
+from phenopy.build_hpo import generate_annotated_hpo_network
+from phenopy.score import Scorer
+from phenopy.util import remove_parents
 
 class SimScorer:
-    def __init__(self, scoring_method='Resnik', sum_method='BMA'):
+    """ Similarity scorer class for HPO terms. """
+    def __init__(self, scoring_method='Resnik', sum_method='BMA') -> None:
         """
         Constructor
 
@@ -22,8 +26,25 @@ class SimScorer:
         """
         self.hpo_network, self.name_to_id_and_reverse, self.scorer = self._init_calc_similarity(scoring_method=scoring_method,
                                                                                     sum_method=sum_method)
+        
+    def delete_parent_terms(self, hpo_terms: List[str]) -> List[str]:
+        """
+        Delete parent terms from a list of HPO terms
 
-    def get_graph(self, hpo_terms, hpo_id_as_label):
+        Parameters
+        ----------
+        hpo_terms: list
+            HPO terms to delete parent terms from
+
+        Returns
+        ----------
+        hpo_terms: list
+            HPO terms without parent terms
+        """
+        filtered_hpo_terms = remove_parents(hpo_terms, self.hpo_network)
+        return filtered_hpo_terms
+
+    def get_graph(self, hpo_terms: List[str], hpo_id_as_label: bool) -> nx.Graph:
         """
         Get a graph from specific HPO terms
 
@@ -67,11 +88,11 @@ class SimScorer:
                 for alt_id in node[1]['alt_id']:
                     id_to_name[alt_id] = node[1]['name']
 
-        if hpo_id_as_label == False:
+        if hpo_id_as_label is False:
             local_copy_hpo_network = nx.relabel_nodes(local_copy_hpo_network, id_to_name)
         return local_copy_hpo_network
 
-    def _init_calc_similarity(self, scoring_method, sum_method):
+    def _init_calc_similarity(self, scoring_method: str, sum_method: str) -> Tuple[nx.Graph, Dict, Scorer]:
         """
         Initialize phenopy to load needed objects to calculate the semantic similarity later
 
@@ -95,7 +116,7 @@ class SimScorer:
         phenopy_data_directory = os.path.join(os.path.expanduser("~"), '.phenopy', 'data')
         obo_file = os.path.join(phenopy_data_directory, 'hp.obo')
         disease_to_phenotype_file = os.path.join(phenopy_data_directory, 'phenotype.hpoa')
-        hpo_network, alt2prim, disease_records = generate_annotated_hpo_network(obo_file,
+        hpo_network, _, _ = generate_annotated_hpo_network(obo_file,
                                                                                 disease_to_phenotype_file, )
 
         file_path = os.path.join(os.path.expanduser("~"), '.phenopy', 'data', 'hp.obo')
@@ -120,8 +141,10 @@ class SimScorer:
         scorer.summarization_method = sum_method
 
         return hpo_network.reverse(), name_to_id_and_reverse, scorer  # needs reverse otherwise ancestors/desc incorrect
+    
 
-    def calc_similarity(self, terms_a, terms_b):
+    
+    def calc_similarity(self, terms_a: List[str], terms_b: List[str]) -> float:
         """
         Use the initialized phenopy object to calculate the semantic similarity between two lists of HPO terms
 
@@ -136,34 +159,37 @@ class SimScorer:
         -------
         The calculated semantic similarity between the two lists
         """
-        terms_a_proc = []
-        for term in terms_a:
-            if 'HP' in term:
-                if term in self.hpo_network.nodes():
-                    terms_a_proc.append(term)
-            else:
-                if self.name_to_id_and_reverse[term] in self.hpo_network.nodes():
-                    terms_a_proc.append(self.name_to_id_and_reverse[term])
-        terms_b_proc = []
-        for term in terms_b:
-            if 'HP' in term:
-                if term in self.hpo_network.nodes():
-                    terms_b_proc.append(term)
-            else:
-                if self.name_to_id_and_reverse[term] in self.hpo_network.nodes():
-                    terms_b_proc.append(self.name_to_id_and_reverse[term])
-        result = self.scorer.score_term_sets_basic(terms_a_proc, terms_b_proc)
-        if np.isnan(result):
-            result = 0
-        return result
 
-    def calc_full_sim_mat(self, X, mlb=None):
+        hpo_nodes = set(self.hpo_network.nodes())
+        terms_a_proc = [term if 'HP' in term else self.name_to_id_and_reverse[term] for term in terms_a if term in hpo_nodes]
+        terms_b_proc = [term if 'HP' in term else self.name_to_id_and_reverse[term] for term in terms_b if term in hpo_nodes]
+
+        max1 = []
+        max0 = []
+        for term_a in terms_a_proc:
+            max_score = 0
+            for term_b in terms_b_proc:
+                score = self.scorer.score_hpo_pair_hrss(term_a, term_b)
+                max_score = max(max_score, score)
+            max1.append(max_score)
+        
+        for term_b in terms_b_proc:
+            max_score = 0
+            for term_a in terms_a_proc:
+                score = self.scorer.score_hpo_pair_hrss(term_a, term_b)
+                max_score = max(max_score, score)
+            max0.append(max_score)
+        
+        average = np.average(np.append(max1, max0))
+        return 0 if np.isnan(average) else average
+
+    def calc_full_sim_mat(self, x: np.ndarray, mlb=None) -> np.ndarray:
         """
         Calculate the full similarity matrix between a list of patients and controls
 
         Parameters
         ----------
-        X: numpy array
+        x: numpy array
             Array: can inlcude the VGG-Face feature vector (optional) and one cell with a list of the HPO IDs
         mlb: sklearn MultiLabelBinarizer object
             Only used when calling this function while generating LIME explanations. This is needed since LIME needs the expanded HPO list, one-hot encoded, to pertube this matrix.
@@ -171,24 +197,23 @@ class SimScorer:
         Returns
         -------
         sim_mat: numpy array
-            The calculated similarity matrix between every combination in X
+            The calculated similarity matrix between every combination in x
         """
-        sim_mat = np.ones((len(X), len(X)))
+        sim_mat = np.ones((len(x), len(x)))
 
-        if type(X[0, -1]) != list:
-            hpos = mlb.inverse_transform(X[:, :])
+        if not(isinstance(x[0, -1], list)):
+            hpos = mlb.inverse_transform(x[:, :])
         else:
-            hpos = X[:, -1]
+            hpos = x[:, -1]
 
         hpos = self.filter_hpo_df(hpos).flatten()
-
         for i in range(len(sim_mat)):
             for z in range(len(sim_mat)):
                 sim_mat[i, z] = self.calc_similarity(list(set(hpos[i])), list(set(hpos[z])))
         return sim_mat
 
     @staticmethod
-    def calc_sim_scores(sim_mat, train_index, test_index, y_train):
+    def calc_sim_scores(sim_mat: np.ndarray, train_index: np.ndarray, test_index: np.ndarray, y_train: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculate the full similarity matrix between a list of patients and controls
 
@@ -228,7 +253,7 @@ class SimScorer:
 
         return sim_mat_train, sim_mat_test
 
-    def filter_hpo_df(self, df):
+    def filter_hpo_df(self, df: pd.DataFrame) -> Union[np.ndarray,List[str],pd.DataFrame]:
         """
         Exclude certain HPO terms and all child nodes from a dataframe, list, numpy array etc.
 
@@ -258,14 +283,14 @@ class SimScorer:
                 exclude.append(child_node)
             exclude.append(hpo)
 
-        if type(df) == list:
+        if isinstance(df, list):
             return list(set(df) - set(exclude))
-        elif type(df) == np.ndarray:
+        elif isinstance(df, np.ndarray):
             df = pd.DataFrame(df)
             df.iloc[:, -1] = [[i for i in L if i not in exclude] for L in df.iloc[:, -1]]
             return df.to_numpy()
         else:
-            if type(df) == pd.Series:
+            if isinstance(df,pd.Series):
                 df = pd.DataFrame(df).T
             df['hpo_all'] = [[i for i in L if i not in exclude] for L in df['hpo_all']]
             return df

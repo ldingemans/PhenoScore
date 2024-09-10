@@ -1,3 +1,7 @@
+#### Reproducing figures and results from the internship report "Pheno-OptiLIME: faithful Local Interpretable Model-agnostic Explanations for phenotypic data"
+
+The data is not publicly available, but the code is in `notebooks\Reproduce_figures_and_results.ipynb`.
+
 # PhenoScore
 ![PhenoScore logo](phenoscore_logo.png) 
 PhenoScore is an open source, artificial intelligence-based phenomics framework that combines facial recognition technology with Human Phenotype Ontology (HPO) data analysis to quantify phenotypic similarity at both the level of individual patients as well as of cohorts.
@@ -16,11 +20,7 @@ Install the needed dependencies using the requirements file:
 
 `pip install -r requirements.txt`
 
-And then install PhenoScore itself:
-
-``pip install .``
-
-If you get a ``numpy`` error when importing the module, reinstall ``numpy`` because of some compatibility issues, with:
+If you get a ``numpy`` error, reinstall ``numpy`` because of some compatibility issues, with:
 
 `pip uninstall numpy`
 

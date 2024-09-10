@@ -55,11 +55,11 @@ class PermutationTester:
         """
         bs_losses = []
 
-        if X.ndim == 1:
+        if X.ndim == 1: 
             X = X.reshape(-1, 1)
 
         if self._mode != 'face':
-            sim_mat = self._simscorer.calc_full_sim_mat(X)
+            sim_mat = self._simscorer.calc_full_sim_mat(X) #Semantic similarity of HPO terms.
         else:
             sim_mat = None
 

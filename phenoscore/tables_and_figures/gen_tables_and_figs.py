@@ -1,3 +1,5 @@
+from typing import List, Tuple
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -73,7 +75,7 @@ def add_corners(im, fill_value=None, w=224, h=224):
     return im
 
 
-def get_top_HPO(list_of_hpo_terms, invert_negative_correlations):
+def get_top_hpo(list_of_hpo_terms: List, invert_negative_correlations: bool) -> pd.DataFrame:
     """
     Get the top HPO terms from a list of LIME explanations
 
@@ -97,7 +99,6 @@ def get_top_HPO(list_of_hpo_terms, invert_negative_correlations):
         df_exp_here = pd.concat([df_exp_here.iloc[:,0].str.split('=',expand=True), df_exp_here.iloc[:,1]],axis=1)
         df_exp_here.columns = ['hpo', 'positive', 'corr']
         df_exp_total = pd.concat([df_exp_total, df_exp_here]).reset_index(drop=True)
-
     #now, we can invert all the negative correlations (i.e. if something is strongly negatively correlated with class 1, it points to class 0), since it is a binary classification problem: therefore this will only work with two classes!
     if invert_negative_correlations == True:
         df_exp_total.loc[df_exp_total['positive'] == '0', 'corr'] = -df_exp_total.loc[df_exp_total['positive'] == '0', 'corr']
@@ -118,7 +119,10 @@ def get_top_HPO(list_of_hpo_terms, invert_negative_correlations):
     return df_summ_hpo
 
 
-def get_heatmap_from_multiple(list_of_heatmaps, fig, ax, bg_image, alpha, input_img_size):
+
+def get_heatmap_from_multiple(list_of_heatmaps: List, fig: plt.Figure, 
+                              ax: plt.Axes, bg_image: str, 
+                              alpha: float, input_img_size: Tuple[int, int]) -> plt.Figure:
     """
     Generate one average heatmap over several iterations
 
@@ -146,19 +150,17 @@ def get_heatmap_from_multiple(list_of_heatmaps, fig, ax, bg_image, alpha, input_
     for explanation_ in list_of_heatmaps:
         ind = explanation_.top_labels[0]
         dict_heatmap = dict(explanation_.local_exp[ind])
-        temp_heatmap = np.vectorize(dict_heatmap.get)(explanation_.segments)
-        temp_heatmap[temp_heatmap == None] = np.nan
+        temp_heatmap = np.vectorize(lambda x: dict_heatmap.get(x, np.nan))(explanation_.segments)
         heatmaps.append(temp_heatmap)
-    heatmap = np.nanmean(heatmaps, axis=0)
-    heatmap = np.array(heatmap, dtype=float)
-
-    max_heatmap = heatmap.max()
-    min_heatmap = heatmap.min()
+        heatmap = np.nanmean(heatmaps, axis=0)
+        heatmap = np.array(heatmap, dtype=float)
+        max_heatmap = heatmap.max()
+        min_heatmap = heatmap.min()
 
     heatmap = add_corners(heatmap, fill_value=None, w=input_img_size[0], h=input_img_size[1])
     mean_face = add_corners(bg_image, fill_value=min_heatmap, w=input_img_size[0], h=input_img_size[1])
 
-    sm = ax.imshow(heatmap, cmap = 'seismic_r',  vmin  = -max_heatmap, vmax = max_heatmap)
+    _ = ax.imshow(heatmap, cmap = 'seismic_r',  vmin  = -max_heatmap, vmax = max_heatmap)
     #fig.colorbar(sm, ax=ax,fraction=0.046, pad=0.04)
     ax.imshow(mean_face, alpha=alpha)
     ax.axes.xaxis.set_visible(False)

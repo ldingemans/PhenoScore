@@ -1,46 +1,68 @@
-from deepface import DeepFace
+import io
 import os
-from deepface.DeepFace import build_model
-from deepface.commons import functions
 import sys
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-from QMagFace.preprocessing.insightface.src.mtcnn_detector import MtcnnDetector
-from QMagFace.preprocessing.align import preprocess
-from QMagFace.preprocessing.magface.network_inf import builder_inf
-import numpy as np
+import urllib.request
+from collections import namedtuple
+
 import cv2
+import numpy as np
+import tensorflow as tf
 import torch
 import torchvision.transforms
-from collections import namedtuple
-import io
-import tensorflow as tf
-import urllib.request
+from deepface import DeepFace
+from deepface.DeepFace import build_model
+from deepface.commons import functions
+
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+from QMagFace.preprocessing.align import preprocess
+from QMagFace.preprocessing.insightface.src.mtcnn_detector import MtcnnDetector
+from QMagFace.preprocessing.magface.network_inf import builder_inf
 
 class FacialFeatureExtractor:
+    """
+    Base class for facial feature extraction within the PhenoScore framework.
+
+    This class defines a common interface for facial feature extraction. 
+    Subclasses are expected to implement the methods defined here.
+    """
     def __init__(self):
         """
-        Constructor
+        Initializes the facial feature extractor.
         """
-        pass
 
-    def process_file(self, path_to_img):
+    def process_file(self, path_to_img: str) -> None:
         """
-        Extract facial features for an image
+        Abstract method for processing an image file and extracting facial features.
 
         Parameters
         ----------
         path_to_img: str
-            Path to image to process
+            Path to image to process.
         """
-        pass
 
-    def get_norm_image(self, img_path):
-        pass
+    def get_norm_image(self, img_path: str) -> None:
+        """
+        Abstract method for normalizing an image for processing.
 
-    def predict_aligned_img(self, X_face):
-        pass
+        Parameters
+        ----------
+        img_path: str
+            Path to the image to normalize.
+        """
+
+    def predict_aligned_img(self, x_face: np.ndarray) -> None:
+        """
+        Abstract method for making predictions on aligned images.
+
+        Parameters
+        ----------
+        x_face: np.ndarray
+            The input aligned image for feature extraction.
+        """
 
 class VGGFaceExtractor(FacialFeatureExtractor):
+    """Facial feature extractor for VGG-Face"""
+
     def __init__(self):
         """
         Constructor
@@ -48,7 +70,6 @@ class VGGFaceExtractor(FacialFeatureExtractor):
         self.face_vector_size = 2622
         self.input_image_size = (224, 224)
         self.build_model = build_model("VGG-Face")
-        pass
 
     def process_file(self, path_to_img):
         """
@@ -69,7 +90,7 @@ class VGGFaceExtractor(FacialFeatureExtractor):
         return result
 
     @staticmethod
-    def get_norm_image(img_path):
+    def get_norm_image(img_path: str) -> np.ndarray:
         """
         Preprocess the image for VGG-Face, using MTCNN (detect face, alignment, etc)
 
@@ -95,12 +116,13 @@ class VGGFaceExtractor(FacialFeatureExtractor):
         img_tensor = functions.normalize_input(img=img, normalization='base')
         return img_tensor[0]
 
-    def predict_aligned_img(self, X_face):
-        return self.build_model.predict(X_face, verbose=False)
+    def predict_aligned_img(self, x_face):
+        return self.build_model.predict(x_face, verbose=False)
 
 
 class QMagFaceExtractor(FacialFeatureExtractor):
-    def __init__(self, path_to_dir):
+    """Facial feature extractor for QMagFace"""
+    def __init__(self, path_to_dir: str):
         """
         Constructor
         """
@@ -142,7 +164,7 @@ class QMagFaceExtractor(FacialFeatureExtractor):
         model = builder_inf(args)
         self.build_model = torch.nn.DataParallel(model)
 
-    def process_file(self, path_to_img):
+    def process_file(self, path_to_img: str):
         """
         Extract facial features for an image
 
@@ -160,15 +182,15 @@ class QMagFaceExtractor(FacialFeatureExtractor):
             embedding = None
         return embedding
 
-    def get_norm_image(self, path_to_img):
-        if type(path_to_img) == str:
-            p_img = preprocess(self._det, cv2.imread(path_to_img))
+    def get_norm_image(self, img_path: str):
+        if isinstance(img_path, str):
+            p_img = preprocess(self._det, cv2.imread(img_path))
         else:
-            p_img = preprocess(self._det, path_to_img)
+            p_img = preprocess(self._det, img_path)
         #  normally aligned images get saved to disc, and imwrite changes the array a bit
         #  so for consistent performance we need to do this in memory
         try:
-            is_success, buffer = cv2.imencode(".jpg", p_img)
+            _, buffer = cv2.imencode(".jpg", p_img)
             io_buf = io.BytesIO(buffer)
             decode_img = cv2.imdecode(np.frombuffer(io_buf.getbuffer(), np.uint8), -1)
             decode_img = decode_img / 255
@@ -177,13 +199,13 @@ class QMagFaceExtractor(FacialFeatureExtractor):
             decode_img = None
         return decode_img
 
-    def predict_aligned_img(self, X_face):
+    def predict_aligned_img(self, x_face: np.ndarray):
         self.build_model.eval()
         trans = torchvision.transforms.ToTensor()
-        if X_face.shape == (112, 112, 3):
+        if x_face.shape == (112, 112, 3):
             with torch.no_grad():
                 try:
-                    input_ = trans(X_face).unsqueeze(0)
+                    input_ = trans(x_face).unsqueeze(0)
                     if self._use_cpu:
                         embedding = self.build_model(input_).to('cpu')
                         embedding = embedding.numpy()
@@ -195,7 +217,7 @@ class QMagFaceExtractor(FacialFeatureExtractor):
         else:
             all_inputs = torch.tensor([], dtype=torch.float32)
             with torch.no_grad():
-                for img in X_face:
+                for img in x_face:
                         input_ = trans(img).unsqueeze(0)
                         all_inputs = torch.cat([all_inputs, input_])
                 if self._use_cpu:
