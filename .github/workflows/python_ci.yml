@@ -2,13 +2,10 @@ name: CI
 
 on:
     push:
-      # Uncomment when we have `development` and remove `main`
-#      branches: [ development ]
-      branches: [ main ]
+      branches: [ main, development ]
     pull_request:
-      # Uncomment when we have `development`
-#      branches: [ main, development ]
-      branches: [ main ]
+      branches: [ main, development ]
+
 
 jobs:
     build:
