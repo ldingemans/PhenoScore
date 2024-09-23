@@ -2,10 +2,13 @@ name: CI
 
 on:
     push:
-      branches: [ main, development ]
+      # Uncomment when we have `development` and remove `main`
+#      branches: [ development ]
+      branches: [ main, develop ]
     pull_request:
-      branches: [ main, development ]
-
+      # Uncomment when we have `development`
+      branches: [ main, develop ]
+      #branches: [ main ]
 
 jobs:
     build:
@@ -14,7 +17,7 @@ jobs:
       strategy:
         fail-fast: false
         matrix:
-          os: [  ubuntu-latest ]
+          os: [  ubuntu-latest, windows-latest ]
           python: [ "3.9" ]
 
       steps:
@@ -28,6 +31,7 @@ jobs:
             python -m pip install --upgrade pip
             pip install .
             pip uninstall -y numpy
+            pip install mxnet==1.7.0post2 --no-dependencies
             pip install numpy==1.23.5
         - name: Run tests
           run: |
