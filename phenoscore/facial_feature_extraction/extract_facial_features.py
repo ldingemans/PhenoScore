@@ -198,6 +198,21 @@ class GestaltMatcherFaceExtractor(FacialFeatureExtractor):
 
     def predict_aligned_img(self, aligned_img):
         from predict_ensemble import predict_memory
-        representation = np.array(predict_memory(self._models, self._device, aligned_img))
-        return np.concatenate([np.mean(representation[:4, :], axis=0), np.mean(representation[4:8, :], axis=0),
-                               np.mean(representation[8:, :], axis=0)])
+
+        if aligned_img.shape == (112, 112, 3):
+            try:
+                representation = np.array(predict_memory(self._models, self._device, aligned_img))
+                embedding = np.concatenate(
+                    [np.mean(representation[:4, :], axis=0), np.mean(representation[4:8, :], axis=0),
+                     np.mean(representation[8:, :], axis=0)])
+            except:
+                embedding = None
+        else:
+            embedding = []
+            for img in aligned_img:
+                representation = np.array(predict_memory(self._models, self._device, img))
+                embedding.append(np.concatenate(
+                    [np.mean(representation[:4, :], axis=0), np.mean(representation[4:8, :], axis=0),
+                     np.mean(representation[8:, :], axis=0)]))
+            embedding = np.array(embedding)
+        return embedding
