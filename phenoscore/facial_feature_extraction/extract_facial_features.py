@@ -56,6 +56,7 @@ class QMagFaceExtractor(FacialFeatureExtractor):
         self.face_vector_size = 512
         self.input_image_size = (112, 112)
         self._path_to_dir = path_to_dir
+        self.lime_iter = 100
         self._det = MtcnnDetector(
             model_folder=os.path.join(self._path_to_dir, 'QMagFace', 'models_qmag', 'mtcnn-model'),
             accurate_landmark=True,
@@ -171,6 +172,7 @@ class GestaltMatcherFaceExtractor(FacialFeatureExtractor):
             self._device_detect = models, device, model_detect, device_detect
         self.face_vector_size = 1536
         self.input_image_size = (112, 112)
+        self.lime_iter = 10
         return
 
     def process_file(self, path_to_img):

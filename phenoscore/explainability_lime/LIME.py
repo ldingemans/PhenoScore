@@ -171,7 +171,7 @@ def predict_hpo(X_hpo, classifier_args):
 
 
 def explain_prediction(X, index_pt, clf, scale_face=None, scale_hpo=None, hpo_terms_pt=None, hpo_terms_cont=None,
-                       simscorer=None, id_to_name=None, img_path_index_patient=None, n_iter=100, facial_feature_extractor=None):
+                       simscorer=None, id_to_name=None, img_path_index_patient=None, facial_feature_extractor=None):
     """
     Use LIME to generate predictions for a prediction. Use both image (when available) and HPO terms. When no image is available (img_path_index_patient = None), only generate LIME for HPO terms.
 
@@ -258,7 +258,7 @@ def explain_prediction(X, index_pt, clf, scale_face=None, scale_hpo=None, hpo_te
         local_pred_face = []
         segmentation_fn = random_mask
         aligned_image = facial_feature_extractor.get_norm_image(img_path_index_patient)
-        for m in range(n_iter):
+        for m in range(facial_feature_extractor.lime_iter):
             try:
                 explanation = explainer.explain_instance(aligned_image, predict_image, num_samples=200, batch_size=50,
                                                          segmentation_fn=segmentation_fn, classifier_args=classifier_args)

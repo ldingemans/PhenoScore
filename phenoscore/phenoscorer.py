@@ -394,7 +394,7 @@ class PhenoScorer:
                                                                                     hpo_terms_cont,
                                                                                     self._simscorer,
                                                                                     self._simscorer.name_to_id_and_reverse,
-                                                                                    img, n_iter=lime_iter,
+                                                                                    img,
                                                                                     facial_feature_extractor=self._facial_feature_extractor)
             self.vus_results = [preds_both, preds_hpo, preds_face, exp_face, exp_hpo, img]
         else:

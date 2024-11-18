@@ -158,13 +158,11 @@ class CrossValidatorAndLIME:
                                                                                             simscorer,
                                                                                             simscorer.name_to_id_and_reverse,
                                                                                             str(file_paths[z]),
-                                                                                            n_iter=100,
                                                                                             facial_feature_extractor=facial_feature_extractor)
                 elif mode == 'face':
                     exp_face, local_pred_face, exp_hpo, local_pred_hpo = explain_prediction(X, z, clf, scale_face,
                                                                                             img_path_index_patient=str(
                                                                                                 file_paths[z]),
-                                                                                            n_iter=100,
                                                                                             facial_feature_extractor=facial_feature_extractor)
 
                 explanations_face.append(exp_face)
