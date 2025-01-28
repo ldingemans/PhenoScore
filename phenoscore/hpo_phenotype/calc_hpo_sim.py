@@ -16,8 +16,8 @@ class SimScorer:
         ----------
         similarity_data_path: str
             Path to directory containing similarity data files:
-            - similarities.bin: Binary file with non-zero similarities
-            - similarities_index.npy: NumPy file with index for fast lookups
+            - similarities_data.bin: Binary file with non-zero similarities
+            - similarities_index_file.npy: NumPy file with index for fast lookups
             - valid_terms.npy: NumPy file with list of valid terms
         hpo_network_csv_path: str
             Path to CSV file containing HPO term relationships.
@@ -29,9 +29,9 @@ class SimScorer:
         self.data_dir = Path(similarity_data_path)
 
         # Initialize binary similarity lookup
-        self.bin_file = open(self.data_dir / 'similarities.bin', 'rb')
+        self.bin_file = open(self.data_dir / 'similarities_data.bin', 'rb')
         self.mmap = mmap.mmap(self.bin_file.fileno(), 0, access=mmap.ACCESS_READ)
-        self.similarity_index = np.load(self.data_dir / 'similarities_index.npy',
+        self.similarity_index = np.load(self.data_dir / 'similarities_index_file.npy',
                                         allow_pickle=True).item()
         self.valid_terms = set(np.load(self.data_dir / 'valid_terms.npy'))
 

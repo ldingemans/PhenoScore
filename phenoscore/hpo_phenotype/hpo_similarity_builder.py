@@ -257,7 +257,7 @@ def build_similarities(output_dir: str = '.'):
     Returns
     -------
     dict
-        Paths to the generated files (similarities.bin, valid_terms.npy, name_to_id.json, hpo_network.csv)
+        Paths to the generated files (similarities_data.bin, valid_terms.npy, name_to_id.json, hpo_network.csv)
     """
     # Check for required packages first
     check_phenopy_installation()
@@ -268,11 +268,11 @@ def build_similarities(output_dir: str = '.'):
 
     # Define output paths
     csv_path = output_dir / 'hpo_similarities.csv'
-    bin_path = output_dir / 'similarities.bin'
+    bin_path = output_dir / 'similarities_data.bin'
     terms_path = output_dir / 'valid_terms.npy'
     name_to_id_path = output_dir / 'hpo_name_to_id_and_reverse.json'
     network_path = output_dir / 'hpo_network.csv'
-    index_path = output_dir / 'similarities_index.npy'
+    index_path = output_dir / 'similarities_index_file.npy'
 
     # Initialize SimScorer to get nodes
     sim = SimScorer()
