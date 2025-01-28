@@ -20,6 +20,7 @@ from phenoscore.facial_feature_extraction.extract_facial_features import QMagFac
 from phenoscore.models.svm import get_clf
 from sklearn.preprocessing import normalize
 import torch
+from pathlib import Path
 
 
 class PhenoScorer:
@@ -60,22 +61,25 @@ class PhenoScorer:
 
         assert ((mode == 'both') or (mode == 'face') or (mode == 'hpo'))
 
+        path_to_script = os.path.realpath(__file__).split(os.sep)[:-1]
+        path_to_script.insert(1, os.sep)
+
         self.gene_name = gene_name
         self.mode = mode
         self.permutation_test_brier = None
         self.permutation_test_auc = None
         self.permutation_test_p_value = None
         self.lime_results = None
-        self._simscorer = SimScorer(scoring_method=method_hpo_similarity, sum_method=method_summ_hpo_similarities)
+        self._simscorer = SimScorer(
+            similarity_csv_path=os.path.join(*path_to_script, 'hpo_phenotype', 'hpo_similarities.csv.gz'),
+            hpo_network_csv_path=os.path.join(*path_to_script, 'hpo_phenotype', 'hpo_network.csv'),
+            name_to_id_json=os.path.join(*path_to_script, 'hpo_phenotype', 'hpo_name_to_id_and_reverse.json')
+        )
         if (mode == 'both') or (mode == 'face'):
             if face_module == 'QMagFace':
-                path_to_script = os.path.realpath(__file__).split(os.sep)[:-1]
-                path_to_script.insert(1, os.sep)
                 path_to_qmagface = os.path.join(*path_to_script, 'facial_feature_extraction')
                 self._facial_feature_extractor = QMagFaceExtractor(path_to_dir=path_to_qmagface, use_cpu=use_cpu)
             elif face_module == 'GM-arc':
-                path_to_script = os.path.realpath(__file__).split(os.sep)[:-1]
-                path_to_script.insert(1, os.sep)
                 path_to_gm = os.path.join(*path_to_script, 'facial_feature_extraction', 'GestaltMatcher-arc')
                 self._facial_feature_extractor = GestaltMatcherFaceExtractor(path_to_dir=path_to_gm, use_cpu=use_cpu)
             else:
