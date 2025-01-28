@@ -24,7 +24,7 @@ from pathlib import Path
 
 
 class PhenoScorer:
-    def __init__(self, gene_name, mode, method_hpo_similarity='Resnik', method_summ_hpo_similarities='BMA',
+    def __init__(self, gene_name, mode,
                  face_module='QMagFace', use_cpu='auto'):
         """
         Constructor
@@ -35,12 +35,6 @@ class PhenoScorer:
             Name of gene for the LIME plot
         mode: str
             Whether to use facial data, HPO terms, or both
-        method_hpo_similarity
-            Scoring method to use to calculate semantic similarity.
-            Can be HRSS, Resnik, Jaccard or word2vec
-        method_summ_hpo_similarities: str
-            Method to summarize the HPO term similarities.
-            Can be BMA, BMWA, or maximum.
         face_module: str
             Method to extract facial features, default is QMagFace
         use_cpu: str
@@ -71,7 +65,7 @@ class PhenoScorer:
         self.permutation_test_p_value = None
         self.lime_results = None
         self._simscorer = SimScorer(
-            similarity_csv_path=os.path.join(*path_to_script, 'hpo_phenotype', 'hpo_similarities.csv.gz'),
+            similarity_data_path=os.path.join(*path_to_script, 'hpo_phenotype'),
             hpo_network_csv_path=os.path.join(*path_to_script, 'hpo_phenotype', 'hpo_network.csv'),
             name_to_id_json=os.path.join(*path_to_script, 'hpo_phenotype', 'hpo_name_to_id_and_reverse.json')
         )
