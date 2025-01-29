@@ -273,7 +273,7 @@ def explain_prediction(X, index_pt, clf, scale_face=None, scale_hpo=None, hpo_te
     if hpo_terms_pt is not None:
         feature_hpo_names = []
         for hpo_id in mlb.classes_:
-            feature_hpo_names.append(id_to_name[hpo_id.strip()])
+            feature_hpo_names.append(id_to_name[str(hpo_id).zfill(7)])
 
         explainer = LimeTabularExplainer(X_expanded_train.to_numpy(),
             training_labels=y_train,
