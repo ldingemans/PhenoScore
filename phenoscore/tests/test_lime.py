@@ -8,8 +8,7 @@ import os
 
 class CrossValLIMETester(unittest.TestCase):
     def setUp(self):
-        self._phenoscorer = PhenoScorer(gene_name='SATB1', mode='both', method_hpo_similarity='Resnik',
-                                        method_summ_hpo_similarities='BMA')
+        self._phenoscorer = PhenoScorer(gene_name='SATB1', mode='both')
 
     def test_lime_gen(self):
         try:

@@ -9,7 +9,7 @@ from sklearn.metrics import brier_score_loss
 
 class SVMTester(unittest.TestCase):
     def setUp(self):
-        self._simscorer = SimScorer(scoring_method='Resnik', sum_method='BMA')
+        self._simscorer = SimScorer()
         self._phenoscorer = PhenoScorer(gene_name='random', mode='both')
 
     def test_svm(self):
