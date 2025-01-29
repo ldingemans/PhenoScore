@@ -40,10 +40,12 @@ class SimScorer:
         if not bin_path.is_file():
             file_url_bin = "https://www.dropbox.com/scl/fi/jom6tifl9kzkuckyfhrml/similarities_data.bin?rlkey=dmdhxj9jbddtv44kovd02wvf3&st=msca38ss&dl=1"
             urllib.request.urlretrieve(file_url_bin, bin_path)
+            print(os.path.getsize(bin_path) / 1024 / 1024)
 
         if not json_path.is_file():
             file_url_json = "https://www.dropbox.com/scl/fi/40ru28czp1rl9m9bqgixw/similarities_index_file.json?rlkey=5a86apljd3mjwhj2d6cntvqxh&st=dvy509f9&dl=1"
             urllib.request.urlretrieve(file_url_json, json_path)
+            print(os.path.getsize(json_path) / 1024 / 1024)
 
         # Initialize binary similarity lookup
         self.bin_file = open(self.data_dir / 'similarities_data.bin', 'rb')
