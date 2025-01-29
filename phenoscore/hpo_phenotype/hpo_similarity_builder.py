@@ -31,7 +31,7 @@ _sim_scorer = None
 def init_worker():
     """Initialize global SimScorer for each worker process."""
     global _sim_scorer
-    _sim_scorer = SimScorer()
+    _sim_scorer = SimScorer_PhenoPy()
 
 
 def extract_id(term: str) -> int:
@@ -91,7 +91,7 @@ def process_chunk(node_pairs: list, output_csv: str, chunk_size: int = 100000, p
                       index=False)
 
 
-class SimScorer:
+class SimScorer_PhenoPy:
     def __init__(self, scoring_method='Resnik', sum_method='BMA'):
         """
         Constructor
@@ -299,7 +299,7 @@ def build_similarities(output_dir: str = '.'):
     index_path = output_dir / 'similarities_index_file.json'
 
     # Initialize SimScorer to get nodes
-    sim = SimScorer()
+    sim = SimScorer_PhenoPy()
     all_nodes = list(sim.hpo_network.nodes())
 
     # Save additional files
