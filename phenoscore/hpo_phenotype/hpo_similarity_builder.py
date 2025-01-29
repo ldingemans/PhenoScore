@@ -148,7 +148,7 @@ class SimScorer:
         scorer.scoring_method = scoring_method
         scorer.summarization_method = sum_method
 
-        return hpo_network.reverse(), name_to_id_and_reverse, scorer
+        return full_hpo_graph.reverse(), name_to_id_and_reverse, scorer
 
     def save_additional_files(self, output_dir: str):
         """Save name to ID mapping and HPO network structure"""
@@ -158,35 +158,53 @@ class SimScorer:
         with open(output_dir / 'hpo_name_to_id_and_reverse.json', 'w') as f:
             json.dump(self.name_to_id_and_reverse, f)
 
-        # Save network structure using direct edge iteration
         edges = []
+
+        # First, collect all alt_id mappings
+        alt_id_to_primary = {}
+        for node, data in self.hpo_network.nodes(data=True):
+            if 'alt_id' in data:
+                primary_id = extract_id(node)
+                for alt in data['alt_id']:
+                    alt_id = extract_id(alt)
+                    alt_id_to_primary[alt_id] = primary_id
+
+        # Add regular hierarchical edges from the network
         for parent, child in self.hpo_network.edges():
+            parent_id = extract_id(parent)
+            child_id = extract_id(child)
+
+            # Add the original edge
             edges.append({
-                'term': extract_id(child),
-                'parent_term': extract_id(parent)
+                'term': child_id,
+                'parent_term': parent_id
             })
+
+            # For each alt_id of the child, add the same parent relationship
+            if child_id in alt_id_to_primary.values():
+                for alt_id, primary_id in alt_id_to_primary.items():
+                    if primary_id == child_id:
+                        edges.append({
+                            'term': alt_id,
+                            'parent_term': parent_id
+                        })
+
+            # For each alt_id of the parent, add edges from that alt_id to the child
+            if parent_id in alt_id_to_primary.values():
+                for alt_id, primary_id in alt_id_to_primary.items():
+                    if primary_id == parent_id:
+                        edges.append({
+                            'term': child_id,
+                            'parent_term': alt_id
+                        })
         pd.DataFrame(edges).to_csv(output_dir / 'hpo_network.csv', index=False)
 
 
 class FastSimStorage:
     """Storage class for HPO similarities."""
-
-    @staticmethod
-    def collect_all_terms(csv_path):
-        """Collect all unique terms from the CSV, regardless of similarity value."""
-        all_terms = set()
-        for chunk in pd.read_csv(csv_path, chunksize=100000):
-            all_terms.update(chunk['term_a'])
-            all_terms.update(chunk['term_b'])
-        return sorted(list(all_terms))
-
     @staticmethod
     def csv_to_binary(csv_path, bin_path, terms_path):
         """Convert CSV to binary file, storing only non-zero similarities but tracking all terms."""
-        # First collect ALL terms, regardless of similarity
-        all_terms = FastSimStorage.collect_all_terms(csv_path)
-        np.save(terms_path, all_terms)
-
         # Write non-zero similarities to binary file
         with open(bin_path, 'wb') as f:
             for chunk in pd.read_csv(csv_path, chunksize=100000):
@@ -257,7 +275,7 @@ def build_similarities(output_dir: str = '.'):
     Returns
     -------
     dict
-        Paths to the generated files (similarities_data.bin, valid_terms.npy, name_to_id.json, hpo_network.csv)
+        Paths to the generated files (similarities_data.bin, name_to_id.json, hpo_network.csv)
     """
     # Check for required packages first
     check_phenopy_installation()
@@ -269,7 +287,6 @@ def build_similarities(output_dir: str = '.'):
     # Define output paths
     csv_path = output_dir / 'hpo_similarities.csv'
     bin_path = output_dir / 'similarities_data.bin'
-    terms_path = output_dir / 'valid_terms.npy'
     name_to_id_path = output_dir / 'hpo_name_to_id_and_reverse.json'
     network_path = output_dir / 'hpo_network.csv'
     index_path = output_dir / 'similarities_index_file.npy'
@@ -303,14 +320,13 @@ def build_similarities(output_dir: str = '.'):
 
     # Convert to binary format
     converter = FastSimStorage()
-    converter.csv_to_binary(csv_path, bin_path, terms_path)
+    converter.csv_to_binary(csv_path, bin_path)
     converter.create_index_file(bin_path, index_path)
     # Clean up temporary CSV file
     os.remove(csv_path)
 
     return {
         'similarities_bin': bin_path,
-        'valid_terms': terms_path,
         'name_to_id': name_to_id_path,
         'similarities_index' : index_path,
         'network': network_path

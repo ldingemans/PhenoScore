@@ -13,7 +13,10 @@ setup(name='phenoscore',
       packages=find_packages(),
       install_requires=requirements,
 
-      package_data={'': ['facial_feature_extraction/QMagFace/models_qmag/mtcnn-model/*']},
+      package_data={
+          '': ['facial_feature_extraction/QMagFace/models_qmag/mtcnn-model/*'],
+          'phenoscore.hpo_phenotype': ['similarities_data.bin', 'similarities_index_file.npy', 'hpo_name_to_id_and_reverse.json', 'hpo_network.csv']
+      },
       long_description=long_description,
       long_description_content_type='text/markdown',
 

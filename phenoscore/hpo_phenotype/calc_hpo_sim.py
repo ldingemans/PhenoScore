@@ -18,7 +18,6 @@ class SimScorer:
             Path to directory containing similarity data files:
             - similarities_data.bin: Binary file with non-zero similarities
             - similarities_index_file.npy: NumPy file with index for fast lookups
-            - valid_terms.npy: NumPy file with list of valid terms
         hpo_network_csv_path: str
             Path to CSV file containing HPO term relationships.
             Should have columns: term, parent_term
@@ -33,12 +32,12 @@ class SimScorer:
         self.mmap = mmap.mmap(self.bin_file.fileno(), 0, access=mmap.ACCESS_READ)
         self.similarity_index = np.load(self.data_dir / 'similarities_index_file.npy',
                                         allow_pickle=True).item()
-        self.valid_terms = set(np.load(self.data_dir / 'valid_terms.npy'))
 
         # Load name to ID mapping
         with open(name_to_id_json, "r") as f:
             self.name_to_id_and_reverse = json.load(f)
 
+        self.valid_terms = set(self._convert_hpo_list([key for key in self.name_to_id_and_reverse.keys() if "HP:" in key]))
         # Create directed graph from HPO relationships
         self.hpo_network = nx.DiGraph()
         hpo_relations = pd.read_csv(hpo_network_csv_path)
@@ -240,6 +239,59 @@ class SimScorer:
             self.mmap.close()
         if hasattr(self, 'bin_file'):
             self.bin_file.close()
+
+    def get_graph(self, hpo_terms, hpo_id_as_label=False):
+        """
+        Get a graph from specific HPO terms
+
+        Parameters
+        ----------
+        hpo_terms: list
+            HPO terms to create a graph for
+        hpo_id_as_label: bool
+            Whether to relabel the output graph with the HPO labels. If false, keep IDs
+
+        Returns
+        ----------
+        graph: networkx graph
+            Graph based on input HPO terms
+        """
+        # Convert terms to integers if they're in HP:XXXXXXX format
+        terms = self._convert_hpo_list(hpo_terms)
+
+        # Create a new directed graph
+        graph = nx.DiGraph()
+
+        # For each term, find all ancestors (including the term itself)
+        # and add the edges between them to the graph
+        for term in terms:
+            if term not in self.valid_terms:
+                continue
+
+            # Get all ancestors including the term itself
+            ancestors = nx.ancestors(self.hpo_network, term)
+            ancestors.add(term)
+
+            # Add all edges between ancestors that exist in the original network
+            for ancestor in ancestors:
+                for successor in self.hpo_network.successors(ancestor):
+                    if successor in ancestors:
+                        graph.add_edge(ancestor, successor)
+
+        # Relabel nodes with HPO terms if requested
+        if hpo_id_as_label:
+            mapping = {}
+            for node in graph.nodes():
+                # Convert integer ID back to HPO format
+                hpo_id = f"HP:{node:07d}"
+                # Get label from the mapping dictionary
+                if hpo_id in self.name_to_id_and_reverse:
+                    mapping[node] = self.name_to_id_and_reverse[hpo_id]
+                else:
+                    mapping[node] = hpo_id
+            graph = nx.relabel_nodes(graph, mapping)
+
+        return graph
 
     @staticmethod
     def build_similarity_files(output_dir: str = '.'):
