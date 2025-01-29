@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
-from itertools import combinations, islice
+from itertools import islice
 import gc
 import struct
 import os
