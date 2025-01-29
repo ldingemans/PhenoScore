@@ -78,10 +78,7 @@ class QMagFaceExtractor(FacialFeatureExtractor):
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
 
-            def show_progress(block_num, block_size, total_size):
-                print(str(round(block_num * block_size / total_size * 100, 2)) + '%', end="\r")
-
-            urllib.request.urlretrieve(file_url, path_pretrained_weights, show_progress)
+            urllib.request.urlretrieve(file_url, path_pretrained_weights)
             print("Downloaded pretrained weights.")
 
         model = builder_inf(args)
