@@ -5,11 +5,23 @@ from phenoscore.models.svm import get_loss
 from phenoscore.hpo_phenotype.calc_hpo_sim import SimScorer
 from phenoscore.phenoscorer import PhenoScorer
 from sklearn.metrics import brier_score_loss
+import os
 
 
 class SVMTester(unittest.TestCase):
     def setUp(self):
-        self._simscorer = SimScorer()
+        try:
+            self._simscorer = SimScorer(
+                similarity_data_path=os.path.join('phenoscore', 'hpo_phenotype'),
+                hpo_network_csv_path=os.path.join('phenoscore', 'hpo_phenotype', 'hpo_network.csv'),
+                name_to_id_json=os.path.join('phenoscore', 'hpo_phenotype', 'hpo_name_to_id_and_reverse.json')
+            )
+        except:
+            self._simscorer = SimScorer(
+                similarity_data_path=os.path.join('..', 'hpo_phenotype'),
+                hpo_network_csv_path=os.path.join('..', 'hpo_phenotype', 'hpo_network.csv'),
+                name_to_id_json=os.path.join('..', 'hpo_phenotype', 'hpo_name_to_id_and_reverse.json')
+            )
         self._phenoscorer = PhenoScorer(gene_name='random', mode='both')
 
     def test_svm(self):

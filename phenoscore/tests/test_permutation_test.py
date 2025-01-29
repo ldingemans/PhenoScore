@@ -11,7 +11,18 @@ import os
 
 class PermutationTestTester(unittest.TestCase):
     def setUp(self):
-        self._simscorer = SimScorer()
+        try:
+            self._simscorer = SimScorer(
+                similarity_data_path=os.path.join('phenoscore', 'hpo_phenotype'),
+                hpo_network_csv_path=os.path.join('phenoscore', 'hpo_phenotype', 'hpo_network.csv'),
+                name_to_id_json=os.path.join('phenoscore', 'hpo_phenotype', 'hpo_name_to_id_and_reverse.json')
+            )
+        except:
+            self._simscorer = SimScorer(
+                similarity_data_path=os.path.join('..', 'hpo_phenotype'),
+                hpo_network_csv_path=os.path.join('..', 'hpo_phenotype', 'hpo_network.csv'),
+                name_to_id_json=os.path.join('..', 'hpo_phenotype', 'hpo_name_to_id_and_reverse.json')
+            )
         self._phenoscorer = PhenoScorer(gene_name='random', mode='both')
 
     def test_negative_control_permutation(self):
