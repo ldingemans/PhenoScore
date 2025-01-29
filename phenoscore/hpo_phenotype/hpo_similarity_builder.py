@@ -234,7 +234,8 @@ class FastSimStorage:
                     term_dict[term_b][term_a] = offset
                 offset += record_size
 
-        np.save(index_path, dict(term_dict))
+        with open(index_path, 'w') as f_out:
+            json.dump({k: dict(v) for k, v in term_dict.items()}, f_out)
 
 
 class NodePairIterator:
@@ -289,7 +290,7 @@ def build_similarities(output_dir: str = '.'):
     bin_path = output_dir / 'similarities_data.bin'
     name_to_id_path = output_dir / 'hpo_name_to_id_and_reverse.json'
     network_path = output_dir / 'hpo_network.csv'
-    index_path = output_dir / 'similarities_index_file.npy'
+    index_path = output_dir / 'similarities_index_file.json'
 
     # Initialize SimScorer to get nodes
     sim = SimScorer()

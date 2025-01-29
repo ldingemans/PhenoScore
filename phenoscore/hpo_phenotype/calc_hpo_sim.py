@@ -17,7 +17,7 @@ class SimScorer:
         similarity_data_path: str
             Path to directory containing similarity data files:
             - similarities_data.bin: Binary file with non-zero similarities
-            - similarities_index_file.npy: NumPy file with index for fast lookups
+            - similarities_index_file.json: NumPy file with index for fast lookups
         hpo_network_csv_path: str
             Path to CSV file containing HPO term relationships.
             Should have columns: term, parent_term
@@ -30,8 +30,8 @@ class SimScorer:
         # Initialize binary similarity lookup
         self.bin_file = open(self.data_dir / 'similarities_data.bin', 'rb')
         self.mmap = mmap.mmap(self.bin_file.fileno(), 0, access=mmap.ACCESS_READ)
-        self.similarity_index = np.load(self.data_dir / 'similarities_index_file.npy',
-                                        allow_pickle=True).item()
+        with open(self.data_dir / 'similarities_index_file.json', 'r') as f_in:
+            self.similarity_index = json.load(f_in)
 
         # Load name to ID mapping
         with open(name_to_id_json, "r") as f:
