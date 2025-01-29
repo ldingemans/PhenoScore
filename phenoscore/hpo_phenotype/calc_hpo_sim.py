@@ -56,12 +56,12 @@ class SimScorer:
         # Check the first lines of the JSON
         with open(json_path, 'r', encoding='utf-8') as f:
             for i in range(5):
-                print("JSON line", i + 1, ":", f.readline())
+                print("JSON line", i + 1, ":", f.readline()[:100])
 
         # Initialize binary similarity lookup
-        self.bin_file = open(self.data_dir / 'similarities_data.bin', 'rb')
+        self.bin_file = open(bin_path, 'rb')
         self.mmap = mmap.mmap(self.bin_file.fileno(), 0, access=mmap.ACCESS_READ)
-        with open(self.data_dir / 'similarities_index_file.json', 'r') as f_in:
+        with open(json_path, 'r') as f_in:
              data_index_file = json.load(f_in)
 
         # Convert the string keys back to integers
