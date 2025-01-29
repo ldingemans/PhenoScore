@@ -112,11 +112,11 @@ class PhenoScorer:
             elif self.mode == 'hpo':
                 X[i, 0] = ast.literal_eval(df_data.loc[i, 'hpo_all'])
                 df_data.at[i, 'graph'] = self._simscorer.get_graph(ast.literal_eval(df_data.loc[i, 'hpo_all']), False)
-                df_data.at[i, 'hpo_name_inc_parents'] = list(df_data.at[i, 'graph'].nodes())
+                df_data.at[i, 'hpo_name_inc_parents'] = [self._simscorer.name_to_id_and_reverse[f"HP:{str(hpo_id).zfill(7)}"] for hpo_id in list(df_data.at[i, 'graph'].nodes())]
             if self.mode == 'both':
                 X[i, self._facial_feature_extractor.face_vector_size] = ast.literal_eval(df_data.loc[i, 'hpo_all'])
                 df_data.at[i, 'graph'] = self._simscorer.get_graph(ast.literal_eval(df_data.loc[i, 'hpo_all']), False)
-                df_data.at[i, 'hpo_name_inc_parents'] = list(df_data.at[i, 'graph'].nodes())
+                df_data.at[i, 'hpo_name_inc_parents'] = [self._simscorer.name_to_id_and_reverse[f"HP:{str(hpo_id).zfill(7)}"] for hpo_id in list(df_data.at[i, 'graph'].nodes())]
         if (self.mode == 'both') or (self.mode == 'face'):
             indices_not_processed_photographs = np.isnan(X[:, 0].astype(float))
             if np.sum(indices_not_processed_photographs) > 0:
