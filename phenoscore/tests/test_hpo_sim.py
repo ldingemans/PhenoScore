@@ -25,13 +25,13 @@ class SimScorerTester(unittest.TestCase):
             self._simscorer = SimScorer(
                 similarity_data_path=os.path.join('phenoscore', 'hpo_phenotype'),
                 hpo_network_csv_path=os.path.join('phenoscore', 'hpo_phenotype', 'hpo_network.csv'),
-                name_to_id_json=os.path.join('phenoscore', 'hpo_phenotype', 'hpo_name_to_id_and_reverse.json')
+                name_to_id_json=os.path.join('phenoscore', 'hpo_phenotype', 'hpo_name_to_id.json')
             )
         except:
             self._simscorer = SimScorer(
                 similarity_data_path=os.path.join('..', 'hpo_phenotype'),
                 hpo_network_csv_path=os.path.join('..', 'hpo_phenotype', 'hpo_network.csv'),
-                name_to_id_json=os.path.join('..', 'hpo_phenotype', 'hpo_name_to_id_and_reverse.json')
+                name_to_id_json=os.path.join('..', 'hpo_phenotype', 'hpo_name_to_id.json')
             )
 
     def test_sim_scorer_calculations(self):

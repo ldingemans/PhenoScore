@@ -67,7 +67,7 @@ class PhenoScorer:
         self._simscorer = SimScorer(
             similarity_data_path=os.path.join(*path_to_script, 'hpo_phenotype'),
             hpo_network_csv_path=os.path.join(*path_to_script, 'hpo_phenotype', 'hpo_network.csv'),
-            name_to_id_json=os.path.join(*path_to_script, 'hpo_phenotype', 'hpo_name_to_id_and_reverse.json')
+            name_to_id_json=os.path.join(*path_to_script, 'hpo_phenotype', 'hpo_name_to_id.json')
         )
         if (mode == 'both') or (mode == 'face'):
             if face_module == 'QMagFace':

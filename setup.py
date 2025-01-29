@@ -15,7 +15,7 @@ setup(name='phenoscore',
 
       package_data={
           '': ['facial_feature_extraction/QMagFace/models_qmag/mtcnn-model/*'],
-          'phenoscore.hpo_phenotype': ['similarities_data.bin', 'similarities_index_file.json', 'hpo_name_to_id_and_reverse.json', 'hpo_network.csv']
+          'phenoscore.hpo_phenotype': ['similarities_data.bin', 'similarities_index_file.json', 'hpo_name_to_id.json', 'hpo_network.csv']
       },
       long_description=long_description,
       long_description_content_type='text/markdown',

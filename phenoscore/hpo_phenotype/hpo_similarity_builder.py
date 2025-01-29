@@ -155,7 +155,7 @@ class SimScorer:
         output_dir = Path(output_dir)
 
         # Save name to ID mapping
-        with open(output_dir / 'hpo_name_to_id_and_reverse.json', 'w') as f:
+        with open(output_dir / 'hpo_name_to_id.json', 'w') as f:
             json.dump(self.name_to_id_and_reverse, f)
 
         edges = []
@@ -294,7 +294,7 @@ def build_similarities(output_dir: str = '.'):
     # Define output paths
     csv_path = output_dir / 'hpo_similarities.csv'
     bin_path = output_dir / 'similarities_data.bin'
-    name_to_id_path = output_dir / 'hpo_name_to_id_and_reverse.json'
+    name_to_id_path = output_dir / 'hpo_name_to_id.json'
     network_path = output_dir / 'hpo_network.csv'
     index_path = output_dir / 'similarities_index_file.json'
 
