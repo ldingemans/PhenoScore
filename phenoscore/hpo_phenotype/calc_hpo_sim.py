@@ -5,6 +5,8 @@ import json
 import mmap
 import struct
 from pathlib import Path
+import os
+import urllib.request
 
 
 class SimScorer:
@@ -26,6 +28,15 @@ class SimScorer:
             Path to JSON file that contains mapping from HPO IDs to names and vice-versa.
         """
         self.data_dir = Path(similarity_data_path)
+
+
+        if not os.path.isfile(self.data_dir / 'similarities_data.bin'):
+            # Send a GET request to download the file
+            file_url = 'https://www.dropbox.com/scl/fi/jom6tifl9kzkuckyfhrml/similarities_data.bin?rlkey=dmdhxj9jbddtv44kovd02wvf3&st=msca38ss&dl=1'
+            urllib.request.urlretrieve(file_url, self.data_dir / 'similarities_data.bin')
+
+            file_url = 'https://www.dropbox.com/scl/fi/40ru28czp1rl9m9bqgixw/similarities_index_file.json?rlkey=5a86apljd3mjwhj2d6cntvqxh&st=dvy509f9&dl=1'
+            urllib.request.urlretrieve(file_url, self.data_dir / 'similarities_index_file.json')
 
         # Initialize binary similarity lookup
         self.bin_file = open(self.data_dir / 'similarities_data.bin', 'rb')
