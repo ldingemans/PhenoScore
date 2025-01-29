@@ -31,7 +31,13 @@ class SimScorer:
         self.bin_file = open(self.data_dir / 'similarities_data.bin', 'rb')
         self.mmap = mmap.mmap(self.bin_file.fileno(), 0, access=mmap.ACCESS_READ)
         with open(self.data_dir / 'similarities_index_file.json', 'r') as f_in:
-            self.similarity_index = json.load(f_in)
+             data_index_file = json.load(f_in)
+
+        # Convert the string keys back to integers
+        self.similarity_index = {
+            int(k): {int(subk): v for subk, v in subdict.items()}
+            for k, subdict in data_index_file.items()
+        }
 
         # Load name to ID mapping
         with open(name_to_id_json, "r") as f:

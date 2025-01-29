@@ -234,8 +234,14 @@ class FastSimStorage:
                     term_dict[term_b][term_a] = offset
                 offset += record_size
 
+        # JSON can only have string keys, so convert each integer to string
+        json_ready_dict = {
+            str(k): {str(subk): v for subk, v in subdict.items()}
+            for k, subdict in term_dict.items()
+        }
+
         with open(index_path, 'w') as f_out:
-            json.dump({k: dict(v) for k, v in term_dict.items()}, f_out)
+            json.dump(json_ready_dict, f_out)
 
 
 class NodePairIterator:
