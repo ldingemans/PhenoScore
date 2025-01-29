@@ -47,17 +47,6 @@ class SimScorer:
             urllib.request.urlretrieve(file_url_json, json_path)
             print(os.path.getsize(json_path) / 1024 / 1024)
 
-        print("BIN file exists:", bin_path.is_file())
-        print("BIN file size:", bin_path.stat().st_size if bin_path.is_file() else 'N/A')
-
-        print("JSON file exists:", json_path.is_file())
-        print("JSON file size:", json_path.stat().st_size if json_path.is_file() else 'N/A')
-
-        # Check the first lines of the JSON
-        with open(json_path, 'r', encoding='utf-8') as f:
-            for i in range(5):
-                print("JSON line", i + 1, ":", f.readline()[:100])
-
         # Initialize binary similarity lookup
         self.bin_file = open(bin_path, 'rb')
         self.mmap = mmap.mmap(self.bin_file.fileno(), 0, access=mmap.ACCESS_READ)
