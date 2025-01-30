@@ -171,8 +171,6 @@ class SimScorer:
                 row.append(sim)
             sim_matrix.append(row)
 
-        pd.DataFrame(sim_matrix).to_excel(r"C:\Users\Z184215\Downloads\newmethod_scores.xlsx")
-
         sim_matrix = np.array(sim_matrix)
 
         # Calculate BMA using phenopys's method:
