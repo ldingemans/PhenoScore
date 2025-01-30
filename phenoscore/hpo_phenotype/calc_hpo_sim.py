@@ -85,8 +85,8 @@ class SimScorer:
 
     def _convert_hpo_to_int(self, hpo_term):
         """Convert HP:0000001 format to integer 1"""
-        if isinstance(hpo_term, int):
-            return hpo_term
+        if isinstance(hpo_term, (int, np.integer)):
+            return int(hpo_term)
         return int(hpo_term.replace('HP:', ''))
 
     def _convert_hpo_list(self, hpo_terms):
