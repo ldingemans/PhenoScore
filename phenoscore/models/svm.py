@@ -1,9 +1,29 @@
+from typing import Tuple
+
 import numpy as np
 from sklearn.model_selection import StratifiedKFold, LeaveOneOut
 from sklearn.preprocessing import normalize, StandardScaler
+from sklearn import svm
+
+from phenoscore.hpo_phenotype.calc_hpo_sim import SimScorer
 
 
-def get_clf(X, y, simscorer, mode, facial_vector_size=2622):
+def get_clf(
+    x: np.ndarray,
+    y: np.ndarray,
+    simscorer: SimScorer,
+    mode: str,
+    facial_vector_size: int = 2622
+) -> Tuple[
+    svm.SVC,
+    np.ndarray,
+    np.ndarray,
+    StandardScaler,
+    StandardScaler,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray
+]:
     """
     Train a classifier while retaining the original scaler and features of the input data, so it can be used in LIME explanations later.
 
@@ -41,12 +61,12 @@ def get_clf(X, y, simscorer, mode, facial_vector_size=2622):
         The original input data, without the converted X - in the converted X, the HPO IDs are replaced with the average semantic similarity with patients and controls
 
     """
-    X_processed = X[:, :]
+    X_processed = x[:, :]
     if mode != 'face':
-        hpo_terms_pt = X[y == 1, -1]
-        hpo_terms_cont = X[y == 0, -1]
+        hpo_terms_pt = x[y == 1, -1]
+        hpo_terms_cont = x[y == 0, -1]
 
-        sim_mat = simscorer.calc_full_sim_mat(X)
+        sim_mat = simscorer.calc_full_sim_mat(x)
 
         sim_avg_pat = sim_mat[:, y == 1].mean(axis=1).reshape(-1, 1)
         sim_avg_control = sim_mat[:, y == 0].mean(axis=1).reshape(-1, 1)
@@ -59,7 +79,7 @@ def get_clf(X, y, simscorer, mode, facial_vector_size=2622):
         scale_hpo, hpo_terms_pt, hpo_terms_cont, clf_hpo = None, None, None, None
 
     if mode != 'hpo':
-        face_features = np.array(X[:, :facial_vector_size], dtype=float)
+        face_features = np.array(x[:, :facial_vector_size], dtype=float)
 
         scale_face = StandardScaler()
         face_features = normalize(scale_face.fit_transform(face_features))
@@ -76,13 +96,19 @@ def get_clf(X, y, simscorer, mode, facial_vector_size=2622):
     elif mode == 'hpo':
         clf = clf_hpo
     elif mode == 'both':
-        X = np.append(face_features, hpo_features, axis=1)
-        preds, clf = svm_class(X, y, X)
+        x = np.append(face_features, hpo_features, axis=1)
+        preds, clf = svm_class(x, y, x)
     return clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X_processed, \
-           clf_face, clf_hpo
+        clf_face, clf_hpo
 
 
-def get_loss(X, y, simscorer, mode, sim_mat):
+def get_loss(
+    x: np.ndarray,
+    y: np.ndarray,
+    simscorer: SimScorer,
+    mode: str,
+    sim_mat: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Get the predictions for current (possibly randomized) y and X
 
@@ -107,21 +133,22 @@ def get_loss(X, y, simscorer, mode, sim_mat):
         The predicted y labels during cross-validation
     """
 
-    if len(X) < 10:
+    if len(x) < 10:
         skf = LeaveOneOut()
-        skf.get_n_splits(X, y)
+        skf.get_n_splits(x, y)
     else:
         skf = StratifiedKFold(n_splits=5)
-        skf.get_n_splits(X, y)
+        skf.get_n_splits(x, y)
 
     y_pred, y_real, y_ind = [], [], []
 
-    for train_index, test_index in skf.split(X, y):
-        X_train, X_test = X[train_index], X[test_index, :]
+    for train_index, test_index in skf.split(x, y):
+        X_train, X_test = x[train_index], x[test_index, :]
         y_train, y_test = y[train_index], y[test_index]
 
         if mode != 'face':
-            resnik_avg_train, resnik_avg_test = simscorer.calc_sim_scores(sim_mat, train_index, test_index, y_train)
+            resnik_avg_train, resnik_avg_test = simscorer.calc_sim_scores(
+                sim_mat, train_index, test_index, y_train)
             if mode == 'both':
                 X_face_train = np.array(X_train[:, :-1], dtype=float)
                 X_face_test = np.array(X_test[:, :-1], dtype=float)
@@ -139,9 +166,11 @@ def get_loss(X, y, simscorer, mode, sim_mat):
             X_face_test_norm = normalize(scale.transform(X_face_test))
 
         if mode == 'face':
-            predictions, clf = svm_class(X_face_train_norm, y_train, X_face_test_norm)
+            predictions, clf = svm_class(
+                X_face_train_norm, y_train, X_face_test_norm)
         elif mode == 'hpo':
-            predictions, clf = svm_class(X_hpo_train_norm, y_train, X_hpo_test_norm)
+            predictions, clf = svm_class(
+                X_hpo_train_norm, y_train, X_hpo_test_norm)
         elif mode == 'both':
             X_train = np.append(X_face_train_norm, X_hpo_train_norm, axis=1)
             X_test = np.append(X_face_test_norm, X_hpo_test_norm, axis=1)
@@ -155,10 +184,14 @@ def get_loss(X, y, simscorer, mode, sim_mat):
     return y_real, y_pred, y_ind
 
 
-def svm_class(X_train, y_train, X_test):
+def svm_class(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray
+) -> Tuple[np.ndarray, svm.SVC]:
     """
     Train a support vector machine classifier, with the size of cross-validation for the GridSearch dependent on the size of the training dataset, as described in the paper
-    
+
     Parameters
     ----------
     X_train: numpy array
@@ -167,7 +200,7 @@ def svm_class(X_train, y_train, X_test):
         The labels for the training dataset (usually 0 for control and 1 for patient) 
     X_test: numpy array
         Test data with size n x 2624: the VGG-Face feature vector + average HPO similarity for patients + average HPO similarity for controls
-   
+
     Returns
     -------
     predictions: numpy array
@@ -179,7 +212,7 @@ def svm_class(X_train, y_train, X_test):
     from sklearn.model_selection import GridSearchCV, LeaveOneOut
     from sklearn.linear_model import LogisticRegression
 
-    if len(X_train) < 10:
+    if len(x_train) < 10:
         param_grid = {'C': [1e-3, 1, 1e3]}
         clf = GridSearchCV(LogisticRegression(max_iter=1000000, solver='liblinear'),
                            param_grid, cv=LeaveOneOut(), n_jobs=-1, scoring='neg_brier_score')
@@ -189,6 +222,6 @@ def svm_class(X_train, y_train, X_test):
             svm.SVC(probability=True), param_grid, cv=5, n_jobs=-1, scoring='neg_brier_score'
         )
 
-    clf.fit(X_train, y_train)
-    predictions = clf.predict_proba(X_test)[:, 1]
+    clf.fit(x_train, y_train)
+    predictions = clf.predict_proba(x_test)[:, 1]
     return predictions, clf

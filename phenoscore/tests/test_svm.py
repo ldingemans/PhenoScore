@@ -56,4 +56,3 @@ class SVMTester(unittest.TestCase):
             assert np.mean(face_scores) > 0.2
             assert np.mean(both_scores) > 0.2
 
-
