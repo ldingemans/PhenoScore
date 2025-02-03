@@ -1,28 +1,61 @@
-import unittest
-from phenoscore.phenoscorer import PhenoScorer
 import os
+conda_prefix = os.environ.get('CONDA_PREFIX')
+if conda_prefix is not None:
+    os.environ['HOME'] = conda_prefix
+else:
+    os.environ['HOME'] = os.getcwd()
+import unittest
+from phenoscore.hpo_phenotype.calc_hpo_sim import SimScorer
+import pandas as pd
+import numpy as np
+import ast
 
 
-# WARNING: this test does a full run and takes a while to run on a CPU
-
-
-class CrossValLIMETester(unittest.TestCase):
+class SimScorerTester(unittest.TestCase):
     def setUp(self):
-        self._phenoscorer = PhenoScorer(gene_name='SATB1', mode='both')
+        try:
+            random_data_csv = pd.read_excel(os.path.join('phenoscore', 'sample_data', 'random_generated_sample_data.xlsx'))
+        except:
+            random_data_csv = pd.read_excel(os.path.join('..', 'sample_data', 'random_generated_sample_data.xlsx'))
+        hpo_ids = []
+        for i in range(len(random_data_csv)):
+            hpo_ids.append(ast.literal_eval(random_data_csv.loc[i, 'hpo_all']))
+        self._hpo_ids = hpo_ids
+        try:
+            self._simscorer = SimScorer(
+                similarity_data_path=os.path.join('phenoscore', 'hpo_phenotype'),
+                hpo_network_csv_path=os.path.join('phenoscore', 'hpo_phenotype', 'hpo_network.csv'),
+                name_to_id_json=os.path.join('phenoscore', 'hpo_phenotype', 'hpo_name_to_id.json')
+            )
+        except:
+            self._simscorer = SimScorer(
+                similarity_data_path=os.path.join('..', 'hpo_phenotype'),
+                hpo_network_csv_path=os.path.join('..', 'hpo_phenotype', 'hpo_network.csv'),
+                name_to_id_json=os.path.join('..', 'hpo_phenotype', 'hpo_name_to_id.json')
+            )
 
-    def test_lime_gen(self):
+    def test_sim_scorer_calculations(self):
+        sim_mat = np.zeros((len(self._hpo_ids), len(self._hpo_ids)))
+        for i in range(len(self._hpo_ids)):
+            for y in range(len(self._hpo_ids)):
+                sim_mat[i, y] = self._simscorer.calc_similarity(self._hpo_ids[i], self._hpo_ids[y])
         try:
-            X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("..", "sample_data",
-                                                                                       "satb1_data.xlsx"))
+            result_csv = pd.read_csv('sim_mat_random_data.csv')
         except:
-            X, y, img_paths, df_data = self._phenoscorer.load_data_from_excel(os.path.join("phenoscore", "sample_data",
-                                                                                       "satb1_data.xlsx"))
-        self._phenoscorer.get_lime(X, y, img_paths, n_lime=1)
+            result_csv = pd.read_csv(os.path.join('phenoscore', 'tests', 'sim_mat_random_data.csv'))
+        np.testing.assert_array_almost_equal(result_csv, sim_mat, decimal=5)
+
+    def test_sim_scorer(self):
+        sim_mat = self._simscorer.calc_full_sim_mat(self._hpo_ids)
         try:
-            self._phenoscorer.gen_lime_and_results_figure(bg_image=os.path.join("..", "sample_data",
-                                                                                "background_image.jpg"),
-                                                          df_data=df_data, filename='lime_figure_' + 'SATB1_test.pdf')
+            result_csv = pd.read_csv('sim_mat_random_data_filtered_hpo.csv')
         except:
-            self._phenoscorer.gen_lime_and_results_figure(bg_image=os.path.join("phenoscore", "sample_data",
-                                                                                "background_image.jpg"),
-                                                          df_data=df_data, filename='lime_figure_' + 'SATB1_test.pdf')
+            result_csv = pd.read_csv(os.path.join('phenoscore', 'tests', 'sim_mat_random_data_filtered_hpo.csv'))
+        np.testing.assert_array_almost_equal(result_csv, sim_mat, decimal=5)
+
+    def test_filter_hpo_df(self):
+        hpos = pd.DataFrame()
+        hpos['hpo_all'] = ''
+        hpos.at[0,'hpo_all'] = ['HP:0011927', 'HP:0000708', 'HP:0000735', 'HP:0000729', 'HP:0008771', 'HP:0001250']
+        filtered_hpo = self._simscorer.filter_hpo_df(hpos)
+        assert filtered_hpo.loc[0, 'hpo_all'] == [1250]
