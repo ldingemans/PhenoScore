@@ -36,8 +36,7 @@ class LimeBaseOvr(LimeBase):
 
         super(LimeBaseOvr, self).__init__(kernel_fn, verbose, random_state)
         self.penalty = penalty
-        # Add self.yss and check if it is Not None to determine whether we should sample again.
-
+                     
     def explain_instance_with_data(self,
                                    neighborhood_data,
                                    neighborhood_labels,
@@ -92,39 +91,8 @@ class LimeBaseOvr(LimeBase):
             score is the R^2 value of the returned explanation
             local_pred is the prediction of the explanation model on the original instance
         """
-        # ADD: DO NOT DELETE HPO TERMS OF THE PATIENT TO BE EXPLAINED!
-        # hpo_terms = hpo_terms_and_simscorer[0]
-        # simscorer = hpo_terms_and_simscorer[1]
-        # print("Pheno-LASSO")
-        # #print(hpo_terms)
-        # child_terms = simscorer.delete_parent_terms(hpo_terms)
-        # hpo_terms_instance_to_be_explained = [hpo_terms[index] for index, hpo_present in enumerate(neighborhood_data[0]) if hpo_present==1]
-        # child_terms_instance_to_be_explained = simscorer.delete_parent_terms(hpo_terms_instance_to_be_explained)
 
-        # distinct_union_hpo_terms = list(set(child_terms_instance_to_be_explained) | set(child_terms))
-        # all_child_terms = []
-        # print(neighborhood_data.shape[0])
-        # for samples in range(0,neighborhood_data.shape[0]):
-        #     hpo_terms_instance = [hpo_terms[index] for index, hpo_present in enumerate(neighborhood_data[samples]) if hpo_present==1]
-        #     child_terms_instance = simscorer.delete_parent_terms(hpo_terms_instance)
-        #     all_child_terms.append(child_terms_instance)
-
-        # distinct_child_terms = set(term for sublist in all_child_terms for term in sublist)
-
-        # print("HPO_Terms",len(distinct_child_terms))
-
-        # #print("HPO terms",len(hpo_terms))
-        # indices_to_delete = [i for i, x in enumerate(hpo_terms) if x not in (distinct_child_terms)] #FIX: now I delete the child nodes...
-        # #print(indices_to_delete)
-        # neighborhood_data = np.delete(neighborhood_data, indices_to_delete, axis=1)
-
-        # print(neighborhood_data.shape)
         weights = self.kernel_fn(distances)
-        # print("weights", weights)
-        # print("Mean of weights:", np.mean(weights))
-        # print("Standard deviation of weights:", np.std(weights))
-        # print("Max of weights:", np.max(weights))
-        # print("Min of weights:", np.min(weights))
         labels_column = neighborhood_labels[:, label]
         used_features = self.feature_selection(neighborhood_data,
                                                labels_column,
@@ -143,21 +111,14 @@ class LimeBaseOvr(LimeBase):
         prediction_score = easy_model.score(
             neighborhood_data[:, used_features],
             labels_column, sample_weight=weights)
-        # print("R^2",prediction_score)
-        # prediction_score = sum(abs(coeff) for feature, coeff in sorted_coefficients)
         local_pred = easy_model.predict(
             neighborhood_data[0, used_features].reshape(1, -1))
         local_preds = easy_model.predict(neighborhood_data[:, used_features])
         self.ridge_pred = local_preds
-        # print("sum of selected coefficients:",prediction_score)
         sorted_coefficients = sorted(
             zip(used_features, easy_model.coef_), key=lambda x: np.abs(x[1]), reverse=True)
-        # print("coeffs",                 sorted_coefficients)
         sum_coefs = sum(abs(coeff) for feature, coeff in sorted_coefficients)
-        # print("sum", sum_coefs)
         int_array = np.array(sum_coefs)
-        # print(len(self.used_features))
-        # np.save(rf'selected_features/kw{kernel_width}.npy', len(self.used_features))
         # Hooks added to extract important info, as class attributes
         try:
             assert isinstance(easy_model, Ridge)
@@ -321,7 +282,7 @@ class LimeTabularExplainerOvr(LimeTabularExplainer):
                 data_row = data_row.tocsr()
                 np.save('data_row.npy', data_row)
             data, inverse = self.__data_inverse(data_row, num_samples)
-            # print(data, inverse)
+
             np.save('perturbed_samples.npy', data)
             if sp.sparse.issparse(data):
                 # Note in sparse case we don't subtract mean since data would become dense
@@ -333,7 +294,7 @@ class LimeTabularExplainerOvr(LimeTabularExplainer):
                 scaled_data = (data - self.scaler.mean_) / self.scaler.scale_
 
                 np.save('scaled_data.npy', scaled_data)
-            # print(distance_metric)
+
             if (distance_metric != 'BMA-Resnik'):
                 distances = sklearn.metrics.pairwise_distances(
                     scaled_data,
@@ -341,47 +302,20 @@ class LimeTabularExplainerOvr(LimeTabularExplainer):
                     metric=distance_metric
                 ).ravel()
             else:
-                # print('Calculating distances using BMA-Resnik...')
+
                 distances = self.Resnik_BMA(inverse, classifier_args)
-        # print(distances)
-        # print(distances.shape)
             np.save('distances.npy', distances)
-        # print(f'Elapsed time for sampling and calculating distances: {end_time-start_time}')
-    # print(mp.cpu_count())
-# pool = mp.Pool(processes=mp.cpu_count())
-# #Apply predict_fn function to data using multiprocessing
 
-# try:
-#     # Apply predict_fn function to data using multiprocessing
-#     part_pred = partial(self.predict_wrapper, predict_fn=predict_fn, classifier_args=classifier_args)
-#     yss_process = pool.map(part_pred, inverse)
-
-#     # Convert the result to a numpy array
-#     yss = np.array(yss_process).reshape(num_samples,2)
-
-#     # Print the result
-#     print(yss)
-#     print(yss.shape)
-#     # num_workers = pool._processes
-#     # print("Number of worker processes:", num_workers)
-# finally:
-#     # Clean up the pool
-#     pool.close()
-#     pool.join()
-        # Delete files if they exist
 
             yss = predict_fn(inverse, classifier_args)
             np.save('yss.npy', yss)
-            # print("Calculations done for the current instance.")
+            
 
         else:
-            # print('Loading data from files...')
             yss = np.load('yss.npy')
             scaled_data = np.load('scaled_data.npy')
             distances = np.load('distances.npy')
             data_row = np.load('data_row.npy')
-        # print(yss.shape)
-        # print(f'Elapsed time for predicting samples PhenoScore: {end_time-start_time}')
         # for classification, the model needs to provide a list of tuples - classes
         # along with prediction probabilities
         if self.mode == "classification":
@@ -686,7 +620,6 @@ class LimeTabularExplainerOvr(LimeTabularExplainer):
         Rsquared = []
         intercept = []
         for i in range(n_calls):
-            # print('Stability iteration:', i+1, 'of', n_calls)
             exp = self.explain_instance(data_row,
                                         predict_fn,
                                         labels,
@@ -732,46 +665,6 @@ class LimeTabularExplainerOvr(LimeTabularExplainer):
                                     index_verbose=index_verbose)
 
         return csi, vsi, len(confidence_intervals)
-
-    #
-    # def mean_explanation(self, confidence_intervals,n_calls,data_row):
-    #     """Return the mean explanation of the n_calls of LIME"""
-    #
-    #     features_limes = []
-    #     for conf_int in confidence_intervals:
-    #         features_limes.append(conf_int.keys())
-    #     unique_features = list(set([l for ll in features_limes for l in ll]))
-    #
-    #     mean_exp = {}
-    #     for feat in unique_features:
-    #         conf_int_feat = []
-    #         for conf_int in confidence_intervals:
-    #             conf_int_feat.append(conf_int.get(feat))
-    #         mean_exp[feat] = conf_int_feat
-    #
-    #     final_features = []
-    #     for k in sorted(mean_exp, key=lambda k: len(d[k]), reverse=True):
-    #         final_features.append(k)
-    #     final_features = final_features[:n_calls]
-    #     final_exp = {}
-    #     for feat in final_features:
-    #         conf_ints = mean_exp[feat]
-    #         coeff = []
-    #         for conf_int in conf_ints:
-    #             coeff.append(mean(conf_int))
-    #         final_exp[feat] = mean(coeff)
-    #
-    #     for _ in range(n_calls):
-    #         feat = max(mean_exp.items(), key=operator.itemgetter(1))[0]
-    #         final_features.append(feat)
-    #
-    #     mean_explanation = TableDomainMapper(list(final_exp.keys()),
-    #                                          list(final_exp.values()),
-    #                                          scaled_row=data_row,
-    #                                          categorical_features=self.categorical_features,
-    #                                          )
-    #
-    #     mean_explanation.
 
 
 class Interval(object):
@@ -896,7 +789,6 @@ class Sklearn_Lime(BaseEstimator, RegressorMixin):
 
         exp = self.predict(X, predict_function,
                            classifier_args=classifier_args)
-        # print('LABELS',exp.local_exp)
         if self.epsilon:
             if exp.intercept[0] in interval(float(exp.local_pred), self.epsilon) and exp.score in interval(1, 10*self.epsilon):
                 Rquadro = 0
@@ -908,5 +800,4 @@ class Sklearn_Lime(BaseEstimator, RegressorMixin):
             Rquadro = self.maxRsquared - (exp.score-self.maxRsquared)
         else:
             Rquadro = exp.score
-        # print(len(exp.local_exp[1]),"#features selected")
         return Rquadro
