@@ -36,5 +36,7 @@ jobs:
             pip install mxnet==1.7.0post2 --no-dependencies
             pip install numpy==1.23.5
         - name: Run tests
+          env:
+            PYTHONIOENCODING: utf-8
           run: |
             python -m unittest discover -s phenoscore

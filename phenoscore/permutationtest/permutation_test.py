@@ -63,12 +63,15 @@ class PermutationTester:
         else:
             sim_mat = None
 
-        y_real, y_pred, y_ind = get_loss(X, y, self._simscorer, self._mode, sim_mat)
-        emp_loss, emp_loss_auc = brier_score_loss(y_real, y_pred), roc_auc_score(y_real, y_pred)
+        y_real, y_pred, y_ind = get_loss(
+            X, y, self._simscorer, self._mode, sim_mat)
+        emp_loss, emp_loss_auc = brier_score_loss(
+            y_real, y_pred), roc_auc_score(y_real, y_pred)
         pbar.update(1)
         for b in range(self._bootstraps):
             y_random = np.random.permutation(y)
-            y_real, y_pred, y_ind = get_loss(X, y_random, self._simscorer, self._mode, sim_mat)
+            y_real, y_pred, y_ind = get_loss(
+                X, y_random, self._simscorer, self._mode, sim_mat)
             bs_losses.append(brier_score_loss(y_real, y_pred))
             pbar.update(1)
         return emp_loss, np.array(bs_losses), emp_loss_auc
@@ -119,7 +122,8 @@ class PermutationTester:
             classifier_results.append(acc)
             classifier_aucs.append(auc)
             bootstrapped_results.extend(random_losses)
-            ps.append(mannwhitneyu(acc, random_losses, alternative='less', nan_policy='raise')[1])
+            ps.append(mannwhitneyu(acc, random_losses,
+                      alternative='less', nan_policy='raise')[1])
 
         p_value = stats.combine_pvalues(ps, method='fisher', weights=None)[1]
 
@@ -166,8 +170,10 @@ class PermutationTester:
 
         pbar = tqdm(total=self._bootstraps + 1)
 
-        classifier_results, bootstrapped_results, classifier_aucs = self._c2st(X, y, pbar)
-        p_value = mannwhitneyu(classifier_results, bootstrapped_results, alternative='less', nan_policy='raise')[1]
+        classifier_results, bootstrapped_results, classifier_aucs = self._c2st(
+            X, y, pbar)
+        p_value = mannwhitneyu(
+            classifier_results, bootstrapped_results, alternative='less', nan_policy='raise')[1]
 
         self.classifier_results = classifier_results
         self.bootstrapped_results = bootstrapped_results
