@@ -412,7 +412,7 @@ class PhenoScorer:
         if self.mode != 'face':
 
             filtered_hpo = self._simscorer.filter_hpo_df(hpo_all_new_sample)
-
+            filtered_hpo = self._simscorer._convert_hpo_list(filtered_hpo)
             if len(hpo_terms_pt) != len(hpo_terms_cont):
                 print(
                     "WARNING: Number of HPO terms for patients and controls is not equal.")
@@ -446,28 +446,29 @@ class PhenoScorer:
         elif self.mode == 'hpo':
             X_lime = np.append(X[:, -1].reshape(-1, 1),
                                np.zeros((1, 1)), axis=0)
-            X_lime[len(X_lime) - 1, -1] = hpo_all_new_sample
+            X_lime[len(X_lime) - 1, -1] = filtered_hpo
             clf = clf_hpo
             preds_both, preds_face = None, None
         elif self.mode == 'both':
             X_lime = np.append(X, np.append(
                 face_features, np.zeros((1, 1)), axis=1), axis=0)
-            X_lime[len(X_lime) - 1, -1] = hpo_all_new_sample
+            X_lime[len(X_lime) - 1, -1] = filtered_hpo
 
             preds_both = clf.predict_proba(
                 np.append(face_features, hpo_features, axis=1))[:, 1]
 
         if lime_iter > 0:
-            exp_face, local_pred_face, exp_hpo, local_pred_hpo, csi, vsi, max_rsquared, kernel_width, sum_coeffs = explain_prediction(X_lime, len(X_lime) - 1, clf,
-                                                                                                                                      scale_face, scale_hpo, hpo_terms_pt,
-                                                                                                                                      hpo_terms_cont,
-                                                                                                                                      self._simscorer,
-                                                                                                                                      self._simscorer.name_to_id_and_reverse,
-                                                                                                                                      img, n_iter=lime_iter,
-                                                                                                                                      facial_feature_extractor=self._facial_feature_extractor,
-                                                                                                                                      lime_config=LIME_config,
-                                                                                                                                      optilime_config=OptiLIME_config,
-                                                                                                                                      kernel_width=kernel_width)
+            exp_face, local_pred_face, exp_hpo, local_pred_hpo, csi, vsi, max_rsquared, kernel_width, sum_coeffs = explain_prediction(
+                X_lime, len(X_lime) - 1, clf,
+                scale_face, scale_hpo, hpo_terms_pt,
+                hpo_terms_cont,
+                self._simscorer,
+                self._simscorer.name_to_id_and_reverse,
+                img, n_iter=lime_iter,
+                facial_feature_extractor=self._facial_feature_extractor,
+                lime_config=LIME_config,
+                optilime_config=OptiLIME_config,
+                kernel_width=kernel_width)
             self.vus_results = [
                 preds_both,
                 preds_hpo,
