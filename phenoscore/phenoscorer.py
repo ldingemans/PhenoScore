@@ -49,7 +49,8 @@ class OptiLIMEConfiguration(LIMEConfiguration):
 
 class PhenoScorer:
     def __init__(self, gene_name, mode,
-                 face_module='QMagFace', use_cpu='auto'):
+                 face_module='QMagFace', use_cpu='auto',
+                 path_to_gm = None):
         """
         Constructor
 
@@ -63,6 +64,8 @@ class PhenoScorer:
             Method to extract facial features, default is QMagFace
         use_cpu: str
             Can be auto (use GPU when available, otherwise fall back to CPU), True (use CPU) or False (use GPU).
+        path_to_gestaltmatcher: str
+            Path to directory where GestaltMatcher-arc is installed
         """
         if use_cpu == 'auto':
             devices = torch.cuda.device_count()
@@ -74,7 +77,7 @@ class PhenoScorer:
             print('Using CPU.')
         elif not use_cpu:
             print('Force using GPU. Set use_cpu to auto if you want to fallback to CPU if GPU not detected.')
-        else: 
+        else:
             ValueError('Invalid value for use_cpu.')
 
         assert ((mode == 'both') or (mode == 'face') or (mode == 'hpo'))
@@ -98,7 +101,8 @@ class PhenoScorer:
                 path_to_qmagface = os.path.join(*path_to_script, 'facial_feature_extraction')
                 self._facial_feature_extractor = QMagFaceExtractor(path_to_dir=path_to_qmagface, use_cpu=use_cpu)
             elif face_module == 'GM-arc':
-                path_to_gm = os.path.join(*path_to_script, 'facial_feature_extraction', 'GestaltMatcher-arc')
+                if path_to_gm is None:
+                    path_to_gm = os.path.join(*path_to_script, 'facial_feature_extraction', 'GestaltMatcher-arc')
                 self._facial_feature_extractor = GestaltMatcherFaceExtractor(path_to_dir=path_to_gm, use_cpu=use_cpu)
             else:
                 ValueError('Invalid facial recognition module chosen')

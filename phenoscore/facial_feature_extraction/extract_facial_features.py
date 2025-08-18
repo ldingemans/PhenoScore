@@ -11,6 +11,7 @@ import torchvision.transforms
 from collections import namedtuple
 import io
 import urllib.request
+import pickle
 import pandas as pd
 import json
 
@@ -148,7 +149,7 @@ class QMagFaceExtractor(FacialFeatureExtractor):
 
 
 class GestaltMatcherFaceExtractor(FacialFeatureExtractor):
-    def __init__(self, path_to_dir, use_cpu='auto'):
+    def __init__(self, path_to_dir, use_cpu='auto', use_pickled_model=True):
         if use_cpu == 'auto':
             devices = torch.cuda.device_count()
             if devices == 0:
@@ -159,11 +160,21 @@ class GestaltMatcherFaceExtractor(FacialFeatureExtractor):
             self._use_cpu = use_cpu
         sys.path.append(os.path.join(path_to_dir))
         sys.path.append(os.path.join(path_to_dir, 'GestaltEngine-FaceCropper-retinaface'))
-        from detect_pipe import init_model
-        from predict_ensemble import load_models
 
-        model_detect, device_detect = init_model(self._use_cpu)
-        models, device = load_models(self._use_cpu)
+        if not use_pickled_model:
+            from detect_pipe import init_model
+            from predict_ensemble import load_models
+            model_detect, device_detect = init_model(self._use_cpu)
+            models, device = load_models(self._use_cpu)
+        else:
+            cache_file = os.path.join(path_to_dir, 'cached_models.pkl')
+
+            if os.path.exists(cache_file):
+                with open(cache_file, 'rb') as f:
+                    models, device, gallery_set_representations, representation_df, model_detect, device_detect = pickle.load(
+                        f)
+            else:
+                raise ValueError("Cached_models.pkl not found!")
 
         self._models, self._device, self._model_detect, \
             self._device_detect = models, device, model_detect, device_detect
@@ -196,7 +207,7 @@ class GestaltMatcherFaceExtractor(FacialFeatureExtractor):
         return aligned_img
 
     def predict_aligned_img(self, aligned_img):
-        from predict_ensemble import predict_memory
+        from get_feature_vector import predict_memory
 
         if aligned_img.shape == (112, 112, 3):
             try:
