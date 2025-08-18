@@ -203,7 +203,7 @@ class SimScorer_PhenoPy:
 class FastSimStorage:
     """Storage class for HPO similarities."""
     @staticmethod
-    def csv_to_binary(csv_path, bin_path, terms_path):
+    def csv_to_binary(csv_path, bin_path):
         """Convert CSV to binary file, storing only non-zero similarities but tracking all terms."""
         # Write non-zero similarities to binary file
         with open(bin_path, 'wb') as f:
