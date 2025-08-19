@@ -130,7 +130,7 @@ class SimScorer_PhenoPy:
         )
 
         file_path = os.path.join(os.path.expanduser("~"), '.phenopy', 'data', 'hp.obo')
-        full_hpo_graph = obonet.read_obo(file_path)
+        full_hpo_graph = obonet.read_obo(file_path, ignore_obsolete=False)
 
         name_to_id = {data.get('name'): id_ for id_, data in full_hpo_graph.nodes(data=True)}
         temp_dict = {v: k for k, v in name_to_id.items()}
