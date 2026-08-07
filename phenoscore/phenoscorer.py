@@ -20,13 +20,14 @@ from phenoscore.permutationtest.cross_validation import CrossValidatorAndLIME
 from phenoscore.permutationtest.permutation_test import PermutationTester
 from phenoscore.tables_and_figures.gen_tables_and_figs import get_top_hpo, get_heatmap_from_multiple
 
+from dataclasses import dataclass, field
+
 os.environ["MXNET_SUBGRAPH_VERBOSE"] = "0"
 conda_prefix = os.environ.get('CONDA_PREFIX')
 if conda_prefix is not None:
     os.environ['HOME'] = conda_prefix
 else:
     os.environ['HOME'] = os.getcwd()
-
 
 @dataclass
 class LIMEConfiguration:
@@ -42,7 +43,8 @@ class OptiLIMEConfiguration(LIMEConfiguration):
     """Specific configuration for OptiLIME"""
     optilime: bool = False
     maxrsquared: float = 0.9
-    kw_bounds: np.array = np.array([0.01, 5]).reshape(1, -1)
+    kw_bounds: np.array = field(default_factory=lambda: np.array([0.01, 5]).reshape(1, -1))
+
     n_iters: int = 100
     n_pre_samples: int = 30
 
@@ -414,9 +416,11 @@ class PhenoScorer:
                         self._simscorer, self.mode, None)
 
         if self.mode != 'face':
+            hpo_quality_controled = self._simscorer.check_hpo_quality(hpo_all_new_sample)
 
             filtered_hpo = self._simscorer.filter_hpo_df(hpo_all_new_sample)
             filtered_hpo = self._simscorer._convert_hpo_list(filtered_hpo)
+            
             if len(hpo_terms_pt) != len(hpo_terms_cont):
                 print(
                     "WARNING: Number of HPO terms for patients and controls is not equal.")

@@ -8,6 +8,8 @@ from pathlib import Path
 import os
 import urllib.request
 
+# constant value for check_hpo_quality. Derived from control cohort percentiles (n=2157)
+MIN_RESNIK_SUM_P15 = 17
 
 class SimScorer:
     def __init__(self, similarity_data_path, hpo_network_csv_path, name_to_id_json):
@@ -330,3 +332,35 @@ class SimScorer:
             )
 
         return hpo_similarity_builder.build_similarities(output_dir)
+    
+    def check_hpo_quality(self, hpo_terms):
+        """
+        Validate HPO quality:
+        - At least 1 valid HPO term
+        - Resnik self-similarity sum >= threshold
+        - At least 1 descendant of neurodevelopmental delay or intellectual disability
+        """
+        print("Input HPO:", hpo_terms)
+        
+        # Filter terms
+        filtered = self.filter_hpo_df(hpo_terms)
+        if not filtered:
+            raise ValueError("No valid HPO terms found for this patient.")
+
+        #Resnik self-similarity sum
+        total = sum(self._get_similarity(t, t) for t in filtered if t in self.valid_terms)  # voorkomt ValueError
+        
+        if total < MIN_RESNIK_SUM_P15:
+            raise ValueError("HPO content of insufficient quality to make a significant prediction")
+
+        #Neurodevelopmental / ID descendant check
+        neurodev = self._convert_hpo_to_int("HP:0012758")
+        intel_dis = self._convert_hpo_to_int("HP:0001249")
+
+        neurodev_desc = nx.descendants(self.hpo_network, neurodev) | {neurodev}
+        intel_dis_desc = nx.descendants(self.hpo_network, intel_dis) | {intel_dis}
+
+        if not any(t in neurodev_desc or t in intel_dis_desc for t in filtered):
+            raise ValueError("Insufficient HPO overlap with neurodevelopmental cohort")
+
+        return total
