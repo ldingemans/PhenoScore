@@ -409,8 +409,8 @@ class PhenoScorer:
         if lime_iter is None:
             if self.mode == 'hpo':
                 lime_iter = 100
-            elif self._facial_feature_extractor.lime_iter is None:
-                raise RuntimeError("A facial feature extractor is required for facial LIME").
+            elif self._facial_feature_extractor is None:
+                raise RuntimeError("A facial feature extractor is required for facial LIME.")
             else:
                 lime_iter = self._facial_feature_extractor.lime_iter
                 
