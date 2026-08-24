@@ -406,6 +406,10 @@ class PhenoScorer:
         local_pred_hpos: list
             LIME prediction for this instance
         """
+        if lime_iter is None:
+            lime_iter = (self._facial_feature_extractor.lime_iter 
+                         if self._facial_feature_extractor is not None 
+                         else 100)
         if self.mode == 'both' or self.mode == 'face':
             clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = \
                 get_clf(original_x, original_y, self._simscorer, self.mode,
