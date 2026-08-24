@@ -369,7 +369,7 @@ class PhenoScorer:
         plt.show()
         return
 
-    def predict_new_sample(self, original_x: np.ndarray, original_y: np.ndarray, img: str, hpo_all_new_sample: List, LIME_config: LIMEConfiguration = LIMEConfiguration(), OptiLIME_config: OptiLIMEConfiguration = OptiLIMEConfiguration(), lime_iter=100, kernel_width=None) -> 'PhenoScorer':
+    def predict_new_sample(self, original_x: np.ndarray, original_y: np.ndarray, img: str, hpo_all_new_sample: List, LIME_config: LIMEConfiguration = LIMEConfiguration(), OptiLIME_config: OptiLIMEConfiguration = OptiLIMEConfiguration(), lime_iter=None, kernel_width=None) -> 'PhenoScorer':
         """
         Train a classifier, get prediction for a new sample (a VUS for instance) and obtain LIME explanations
 
