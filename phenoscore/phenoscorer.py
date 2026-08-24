@@ -369,7 +369,7 @@ class PhenoScorer:
         plt.show()
         return
 
-    def predict_new_sample(self, original_x: np.ndarray, original_y: np.ndarray, img: str, hpo_all_new_sample: List, LIME_config: LIMEConfiguration = LIMEConfiguration(), OptiLIME_config: OptiLIMEConfiguration = OptiLIMEConfiguration(), lime_iter=100, kernel_width=None) -> 'PhenoScorer':
+    def predict_new_sample(self, original_x: np.ndarray, original_y: np.ndarray, img: str, hpo_all_new_sample: List, LIME_config: LIMEConfiguration = LIMEConfiguration(), OptiLIME_config: OptiLIMEConfiguration = OptiLIMEConfiguration(), lime_iter=None, kernel_width=None) -> 'PhenoScorer':
         """
         Train a classifier, get prediction for a new sample (a VUS for instance) and obtain LIME explanations
 
@@ -406,6 +406,14 @@ class PhenoScorer:
         local_pred_hpos: list
             LIME prediction for this instance
         """
+        if lime_iter is None:
+            if self.mode == 'hpo':
+                lime_iter = 100
+            elif self._facial_feature_extractor is None:
+                raise RuntimeError("A facial feature extractor is required for facial LIME.")
+            else:
+                lime_iter = self._facial_feature_extractor.lime_iter
+
         if self.mode == 'both' or self.mode == 'face':
             clf, hpo_terms_pt, hpo_terms_cont, scale_face, scale_hpo, vgg_face_pt, vgg_face_cont, X, clf_face, clf_hpo = \
                 get_clf(original_x, original_y, self._simscorer, self.mode,
