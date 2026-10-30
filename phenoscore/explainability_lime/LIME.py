@@ -58,7 +58,8 @@ def random_mask(image: np.ndarray) -> np.ndarray:
     shifted_mask = shifted_mask[np.random.randint(chunk_length):, :]
     shifted_mask = shifted_mask[:img_length, :img_length]
 
-    return np.array(shifted_mask, dtype=int)
+    # lime_image perturbs segments 0..n-1, so the labels have to start at 0 also when no zeros were prepended
+    return np.array(shifted_mask - shifted_mask.min(), dtype=int)
 
 
 def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Dict) -> np.ndarray:
