@@ -101,22 +101,15 @@ def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Di
         classifier_args['scale_face'].transform(img_test))
 
     if 'X_hpo' in classifier_args:
-        hpo_features = calc_hpo_test(classifier_args['X_hpo'], classifier_args)
         # since we are iterating the facial features in this LIME instance, duplicate the HPO similarity to be the same in all instances
-        hpo_features = np.repeat(hpo_features, len(face_features), axis=0)
-
-        hpo_features = classifier_args['scale_hpo'].transform(hpo_features)
+        hpo_features = np.repeat(classifier_args['hpo_features'], len(face_features), axis=0)
 
         predictions = classifier_args['clf'].predict_proba(
             np.append(face_features, hpo_features, axis=1))
-        predicted_classes = classifier_args['clf'].predict(
-            np.append(face_features, hpo_features, axis=1))
     else:
         predictions = classifier_args['clf'].predict_proba(face_features)
-        predicted_classes = classifier_args['clf'].predict(face_features)
 
     if len(failed_images) > 0:
-        predicted_classes[np.array(failed_images)] = -1
         predictions[np.array(failed_images), :] = np.nan
         print("There were images in which a face was not detected and therefore the image was not processed. Predictions are np.nan for that instance, please check.")
     return predictions
@@ -238,6 +231,8 @@ def prepare_data_for_lime_explanation(x, index_pt, clf, scale_face, scale_hpo, h
             'simscorer': simscorer,
             'face_model': facial_feature_extractor
         }
+        # X_hpo is constant while LIME perturbs the face, so compute its scaled HPO features for predict_image once
+        classifier_args['hpo_features'] = scale_hpo.transform(calc_hpo_test(classifier_args['X_hpo'], classifier_args))
     else:
         classifier_args = {
             'X_face': np.array(x[index_pt, :-1], dtype=float),
