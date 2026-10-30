@@ -212,22 +212,20 @@ class GestaltMatcherFaceExtractor(FacialFeatureExtractor):
         return aligned_img
 
     def predict_aligned_img(self, aligned_img):
-        from get_feature_vector import predict_memory
+        from get_feature_vector import preprocess
 
-        if aligned_img.shape == (112, 112, 3):
-            try:
-                representation = np.array(predict_memory(self._models, self._device, aligned_img))
-                embedding = np.concatenate(
-                    [np.mean(representation[:4, :], axis=0), np.mean(representation[4:8, :], axis=0),
-                     np.mean(representation[8:, :], axis=0)])
-            except:
-                embedding = None
-        else:
-            embedding = []
-            for img in aligned_img:
-                representation = np.array(predict_memory(self._models, self._device, img))
-                embedding.append(np.concatenate(
-                    [np.mean(representation[:4, :], axis=0), np.mean(representation[4:8, :], axis=0),
-                     np.mean(representation[8:, :], axis=0)]))
-            embedding = np.array(embedding)
-        return embedding
+        single = aligned_img.ndim == 3
+        imgs = aligned_img[np.newaxis] if single else aligned_img
+        # the 4 test-time variants per image of get_feature_vector.predict_memory, all images in one forward pass per model
+        batch = torch.cat([preprocess(img, gray=gray, flip=flip) for img in imgs
+                           for flip in [False, True] for gray in [False, True]]).to(self._device, dtype=torch.float32)
+        embedding = []
+        with torch.no_grad():
+            for model in self._models:
+                model.eval()
+                out = model(batch)
+                representation = out[1] if isinstance(out, (tuple, list)) else out
+                representation = representation.cpu().numpy().astype(np.float64).reshape(len(imgs), 4, -1)
+                embedding.append(np.mean(representation, axis=1))
+        embedding = np.concatenate(embedding, axis=1)
+        return embedding[0] if single else embedding
