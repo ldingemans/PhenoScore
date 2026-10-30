@@ -107,7 +107,7 @@ class PhenoScorer:
                     path_to_gm = os.path.join(*path_to_script, 'facial_feature_extraction', 'GestaltMatcher-arc')
                 self._facial_feature_extractor = GestaltMatcherFaceExtractor(path_to_dir=path_to_gm, use_cpu=use_cpu)
             else:
-                ValueError('Invalid facial recognition module chosen')
+                raise ValueError('Invalid facial recognition module chosen')
         else:
             self._facial_feature_extractor = None
         self.vus_results = None

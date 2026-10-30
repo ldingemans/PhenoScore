@@ -58,7 +58,8 @@ def random_mask(image: np.ndarray) -> np.ndarray:
     shifted_mask = shifted_mask[np.random.randint(chunk_length):, :]
     shifted_mask = shifted_mask[:img_length, :img_length]
 
-    return np.array(shifted_mask, dtype=int)
+    # lime_image perturbs segments 0..n-1, so the labels have to start at 0 also when no zeros were prepended
+    return np.array(shifted_mask - shifted_mask.min(), dtype=int)
 
 
 def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Dict) -> np.ndarray:
@@ -80,7 +81,7 @@ def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Di
     failed_images = []
 
     if isinstance(x_face, str):
-        x_face = classifier_args['face_model'].get_norm_image(x_face)
+        x_face = classifier_args['face_model'].get_norm_image(x_face)[np.newaxis]
     elif isinstance(x_face, list):
         x_face_temp = []
         for i, file in enumerate(x_face):
@@ -89,7 +90,7 @@ def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Di
                     classifier_args['face_model'].get_norm_image(file))
             except ValueError as e:
                 if 'Face could not be detected.' in str(e):
-                    x_face_temp.append(np.zeros((1, 224, 224, 3)))
+                    x_face_temp.append(np.zeros(classifier_args['face_model'].input_image_size + (3,), dtype=np.uint8))
                     failed_images.append(i)
                 else:
                     raise (e)
