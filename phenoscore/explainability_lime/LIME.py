@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Union, List, Dict
+from typing import List, Dict
 import traceback
 import os
 
@@ -58,17 +58,18 @@ def random_mask(image: np.ndarray) -> np.ndarray:
     shifted_mask = shifted_mask[np.random.randint(chunk_length):, :]
     shifted_mask = shifted_mask[:img_length, :img_length]
 
-    return np.array(shifted_mask, dtype=int)
+    # lime_image perturbs segments 0..n-1, so the labels have to start at 0 also when no zeros were prepended
+    return np.array(shifted_mask - shifted_mask.min(), dtype=int)
 
 
-def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Dict) -> np.ndarray:
+def predict_image(x_face: np.ndarray, classifier_args: Dict) -> np.ndarray:
     """
-    Get predictions for a given image, or filepath. Can be used by LIME to get predictions for perturbated images
+    Get predictions for a batch of aligned face images. Used by LIME to get predictions for perturbated images
 
     Parameters
     ----------
-    x_face: numpy array/list
-        Can be a numpy array of normalized VGG-Face feature vectors, a list of file paths or a single file path
+    x_face: numpy array
+        Batch of aligned face images, as returned by the face model's get_norm_image
     classifier_args: dict
         Dictionary with arguments to pass to classifier while using LIME
 
@@ -77,48 +78,20 @@ def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Di
     predictions: numpy array
         Predictions per class
     """
-    failed_images = []
-
-    if isinstance(x_face, str):
-        x_face = classifier_args['face_model'].get_norm_image(x_face)
-    elif isinstance(x_face, list):
-        x_face_temp = []
-        for i, file in enumerate(x_face):
-            try:
-                x_face_temp.append(
-                    classifier_args['face_model'].get_norm_image(file))
-            except ValueError as e:
-                if 'Face could not be detected.' in str(e):
-                    x_face_temp.append(np.zeros((1, 224, 224, 3)))
-                    failed_images.append(i)
-                else:
-                    raise (e)
-        x_face = np.array(x_face_temp)
-
     img_test = classifier_args['face_model'].predict_aligned_img(x_face)
 
     face_features = normalize(
         classifier_args['scale_face'].transform(img_test))
 
     if 'X_hpo' in classifier_args:
-        hpo_features = calc_hpo_test(classifier_args['X_hpo'], classifier_args)
         # since we are iterating the facial features in this LIME instance, duplicate the HPO similarity to be the same in all instances
-        hpo_features = np.repeat(hpo_features, len(face_features), axis=0)
-
-        hpo_features = classifier_args['scale_hpo'].transform(hpo_features)
+        hpo_features = np.repeat(classifier_args['hpo_features'], len(face_features), axis=0)
 
         predictions = classifier_args['clf'].predict_proba(
             np.append(face_features, hpo_features, axis=1))
-        predicted_classes = classifier_args['clf'].predict(
-            np.append(face_features, hpo_features, axis=1))
     else:
         predictions = classifier_args['clf'].predict_proba(face_features)
-        predicted_classes = classifier_args['clf'].predict(face_features)
 
-    if len(failed_images) > 0:
-        predicted_classes[np.array(failed_images)] = -1
-        predictions[np.array(failed_images), :] = np.nan
-        print("There were images in which a face was not detected and therefore the image was not processed. Predictions are np.nan for that instance, please check.")
     return predictions
 
 
@@ -238,6 +211,8 @@ def prepare_data_for_lime_explanation(x, index_pt, clf, scale_face, scale_hpo, h
             'simscorer': simscorer,
             'face_model': facial_feature_extractor
         }
+        # X_hpo is constant while LIME perturbs the face, so compute its scaled HPO features for predict_image once
+        classifier_args['hpo_features'] = scale_hpo.transform(calc_hpo_test(classifier_args['X_hpo'], classifier_args))
     else:
         classifier_args = {
             'X_face': np.array(x[index_pt, :-1], dtype=float),
