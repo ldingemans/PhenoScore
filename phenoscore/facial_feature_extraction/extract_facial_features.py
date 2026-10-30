@@ -175,6 +175,13 @@ class GestaltMatcherFaceExtractor(FacialFeatureExtractor):
                         f)
             else:
                 raise ValueError("Cached_models.pkl not found!")
+            # The cache is pickled on CPU so it loads anywhere; move the recognition models to the GPU here.
+            # Face detection stays where it was pickled, so the aligned crops are unchanged.
+            if not self._use_cpu:
+                # Keep convolutions in full FP32 (no TF32), so embeddings stay as close as possible to the CPU ones
+                torch.backends.cudnn.allow_tf32 = False
+                device = torch.device('cuda')
+                models = [model.to(device) for model in models]
 
         self._models, self._device, self._model_detect, \
             self._device_detect = models, device, model_detect, device_detect
