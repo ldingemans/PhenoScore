@@ -90,7 +90,7 @@ def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Di
                     classifier_args['face_model'].get_norm_image(file))
             except ValueError as e:
                 if 'Face could not be detected.' in str(e):
-                    x_face_temp.append(np.zeros((1, 224, 224, 3)))
+                    x_face_temp.append(np.zeros(classifier_args['face_model'].input_image_size + (3,), dtype=np.uint8))
                     failed_images.append(i)
                 else:
                     raise (e)
