@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Union, List, Dict
+from typing import List, Dict
 import traceback
 import os
 
@@ -62,14 +62,14 @@ def random_mask(image: np.ndarray) -> np.ndarray:
     return np.array(shifted_mask - shifted_mask.min(), dtype=int)
 
 
-def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Dict) -> np.ndarray:
+def predict_image(x_face: np.ndarray, classifier_args: Dict) -> np.ndarray:
     """
-    Get predictions for a given image, or filepath. Can be used by LIME to get predictions for perturbated images
+    Get predictions for a batch of aligned face images. Used by LIME to get predictions for perturbated images
 
     Parameters
     ----------
-    x_face: numpy array/list
-        Can be a numpy array of normalized VGG-Face feature vectors, a list of file paths or a single file path
+    x_face: numpy array
+        Batch of aligned face images, as returned by the face model's get_norm_image
     classifier_args: dict
         Dictionary with arguments to pass to classifier while using LIME
 
@@ -78,24 +78,6 @@ def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Di
     predictions: numpy array
         Predictions per class
     """
-    failed_images = []
-
-    if isinstance(x_face, str):
-        x_face = classifier_args['face_model'].get_norm_image(x_face)[np.newaxis]
-    elif isinstance(x_face, list):
-        x_face_temp = []
-        for i, file in enumerate(x_face):
-            try:
-                x_face_temp.append(
-                    classifier_args['face_model'].get_norm_image(file))
-            except ValueError as e:
-                if 'Face could not be detected.' in str(e):
-                    x_face_temp.append(np.zeros(classifier_args['face_model'].input_image_size + (3,), dtype=np.uint8))
-                    failed_images.append(i)
-                else:
-                    raise (e)
-        x_face = np.array(x_face_temp)
-
     img_test = classifier_args['face_model'].predict_aligned_img(x_face)
 
     face_features = normalize(
@@ -110,9 +92,6 @@ def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Di
     else:
         predictions = classifier_args['clf'].predict_proba(face_features)
 
-    if len(failed_images) > 0:
-        predictions[np.array(failed_images), :] = np.nan
-        print("There were images in which a face was not detected and therefore the image was not processed. Predictions are np.nan for that instance, please check.")
     return predictions
 
 
