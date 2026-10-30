@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Dict
 import traceback
-import os
 
 import pandas as pd
 import numpy as np
@@ -339,16 +338,6 @@ def explain_prediction(
     local_pred_hpos: float
         LIME prediction for this instance
     """
-    if os.path.exists('yss.npy'):
-        os.remove('yss.npy')
-    if os.path.exists('scaled_data.npy'):
-        os.remove('scaled_data.npy')
-    if os.path.exists('distances.npy'):
-        os.remove('distances.npy')
-    if os.path.exists('data_row.npy'):
-        os.remove('data_row.npy')
-    if os.path.exists('perturbed_samples.npy'):
-        os.remove('perturbed_samples.npy')
     classifier_args, mlb, x_expanded_train, x_expanded_test, feature_hpo_names = prepare_data_for_lime_explanation(
         x, index_pt, clf, scale_face, scale_hpo, hpo_terms_pt, hpo_terms_cont, simscorer, facial_feature_extractor, id_to_name)
 
@@ -365,12 +354,16 @@ def explain_prediction(
 
     if hpo_terms_pt is not None:
         # Generate a LIME explanation for the HPO terms.
+        if kernel_width is None:
+            kernel_width = np.sqrt(len(feature_hpo_names)) * 0.75
+        # One explainer for every kernel width, so the samples are perturbed and predicted only once
+        obj = initialize_lime_object(
+            feature_hpo_names, mlb, lime_config, optilime_config, kernel_width)
+        obj.fit(x_expanded_train.to_numpy())
         if optilime_config.optilime:
             def optilime_loss(kernel_width):
-                single_lime = initialize_lime_object(
-                    feature_hpo_names, mlb, lime_config, optilime_config, kernel_width)
-                single_lime.fit(x_expanded_train.to_numpy())
-                score = single_lime.score(
+                obj.set_params(kernel_width=kernel_width)
+                score = obj.score(
                     np.array(x_expanded_test), predict_hpo, classifier_args=classifier_args)
                 return score
 
@@ -390,9 +383,7 @@ def explain_prediction(
             try:
                 if optilime_config.optilime:
 
-                    obj = initialize_lime_object(
-                        feature_hpo_names, mlb, lime_config, optilime_config, float(kw[rsquared.argmax()]))
-                    obj.fit(x_expanded_train.to_numpy())
+                    obj.set_params(kernel_width=float(kw[rsquared.argmax()]))
                     exp_hpo = obj.predict(
                         np.array(x_expanded_test), predict_hpo, classifier_args=classifier_args)
 
@@ -403,11 +394,6 @@ def explain_prediction(
 
                 else:
 
-                    if kernel_width is None:
-                        kernel_width = np.sqrt(len(feature_hpo_names)) * 0.75
-                    obj = initialize_lime_object(
-                        feature_hpo_names, mlb, lime_config, optilime_config, kernel_width)
-                    obj.fit(x_expanded_train.to_numpy())
                     exp_hpo = obj.predict(
                         np.array(x_expanded_test), predict_hpo, classifier_args=classifier_args)
                     sum_coeffs = sum(
@@ -416,6 +402,9 @@ def explain_prediction(
                     print("Max Rsquared: ", max_rsquared)
                 if lime_config.stability_indices:
                     max_rsquared = 0.0
+                    if optilime_config.optilime:
+                        # check_stability uses the kernel width obj was fitted with, so refit with the chosen one
+                        obj.fit(x_expanded_train.to_numpy())
                     csi, vsi, n_calls = obj.my_lime.check_stability(np.array(x_expanded_test), predict_hpo, classifier_args=classifier_args,
                                                                     num_samples=lime_config.perturbed_samples, num_features=lime_config.num_features, distance_metric=lime_config.distance_metric, n_calls=5)
                     print("CSI: ", csi, "\nVSI: ", vsi,
