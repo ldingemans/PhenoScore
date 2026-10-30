@@ -81,7 +81,7 @@ def predict_image(x_face: Union[np.ndarray, List[str], str], classifier_args: Di
     failed_images = []
 
     if isinstance(x_face, str):
-        x_face = classifier_args['face_model'].get_norm_image(x_face)
+        x_face = classifier_args['face_model'].get_norm_image(x_face)[np.newaxis]
     elif isinstance(x_face, list):
         x_face_temp = []
         for i, file in enumerate(x_face):
