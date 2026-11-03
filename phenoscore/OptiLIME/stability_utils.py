@@ -20,7 +20,6 @@ from lime import explanation
 from lime_stability.utils import refactor_confints_todict, compute_WLS_stdevs, compare_confints, LocalModelError
 import time
 from functools import partial
-import os
 import math
 
 
@@ -92,7 +91,8 @@ class LimeBaseOvr(LimeBase):
             local_pred is the prediction of the explanation model on the original instance
         """
 
-        weights = self.kernel_fn(distances)
+        # kernel_fn has the explainer's kernel width bound in, a kernel_width given here replaces it
+        weights = self.kernel_fn(distances) if kernel_width is None else self.kernel_fn(distances, kernel_width=float(kernel_width))
         labels_column = neighborhood_labels[:, label]
         used_features = self.feature_selection(neighborhood_data,
                                                labels_column,
@@ -184,6 +184,8 @@ class LimeTabularExplainerOvr(LimeTabularExplainer):
         self.base = LimeBaseOvr(
             kernel_fn, verbose=verbose, random_state=self.random_state, penalty=self.penalty)
         self.calculate_stability_indices = calculate_stability_indices
+        # (data_row, data, scaled_data, distances, yss) of the last perturbed instance, reused by explain_instance
+        self.neighbourhood = None
     # Override explain_instance to return also Lime Ridge predictions on the generated points
 
     def predict_wrapper(self, data, predict_fn, classifier_args):
@@ -264,26 +266,15 @@ class LimeTabularExplainerOvr(LimeTabularExplainer):
             explanations.
         """
         from sklearn.preprocessing import StandardScaler
-        if self.calculate_stability_indices:
-            if os.path.exists('yss.npy'):
-                os.remove('yss.npy')
-            if os.path.exists('scaled_data.npy'):
-                os.remove('scaled_data.npy')
-            if os.path.exists('distances.npy'):
-                os.remove('distances.npy')
-            if os.path.exists('data_row.npy'):
-                os.remove('data_row.npy')
-            if os.path.exists('perturbed_samples.npy'):
-                os.remove('perturbed_samples.npy')
-        if not (os.path.exists('yss.npy')) or not (os.path.exists('scaled_data.npy')) or not (os.path.exists('distances.npy')) or not (os.path.exists('data_row.npy')) or stability_indices:
-            np.save('data_row.npy', data_row)
+        # Perturbing data_row and predicting the samples is the costly part, so reuse them when the same dense data_row
+        # is explained again, e.g. for every kernel width OptiLIME tries. Stability indices need new samples every call.
+        if (self.calculate_stability_indices or stability_indices or self.neighbourhood is None
+                or sp.sparse.issparse(data_row) or not np.array_equal(self.neighbourhood[0], data_row)):
             if sp.sparse.issparse(data_row) and not sp.sparse.isspmatrix_csr(data_row):
                 # Preventative code: if sparse, convert to csr format if not in csr format already
                 data_row = data_row.tocsr()
-                np.save('data_row.npy', data_row)
             data, inverse = self.__data_inverse(data_row, num_samples)
 
-            np.save('perturbed_samples.npy', data)
             if sp.sparse.issparse(data):
                 # Note in sparse case we don't subtract mean since data would become dense
                 scaled_data = data.multiply(self.scaler.scale_)
@@ -292,8 +283,6 @@ class LimeTabularExplainerOvr(LimeTabularExplainer):
                     scaled_data = scaled_data.tocsr()
             else:
                 scaled_data = (data - self.scaler.mean_) / self.scaler.scale_
-
-                np.save('scaled_data.npy', scaled_data)
 
             if (distance_metric != 'BMA-Resnik'):
                 distances = sklearn.metrics.pairwise_distances(
@@ -304,18 +293,12 @@ class LimeTabularExplainerOvr(LimeTabularExplainer):
             else:
 
                 distances = self.Resnik_BMA(inverse, classifier_args)
-            np.save('distances.npy', distances)
-
 
             yss = predict_fn(inverse, classifier_args)
-            np.save('yss.npy', yss)
-            
-
+            # a copy, so a later change to the caller's array cannot make a stale neighbourhood match
+            self.neighbourhood = (data_row.copy(), data, scaled_data, distances, yss)
         else:
-            yss = np.load('yss.npy')
-            scaled_data = np.load('scaled_data.npy')
-            distances = np.load('distances.npy')
-            data_row = np.load('data_row.npy')
+            data_row, data, scaled_data, distances, yss = self.neighbourhood
         # for classification, the model needs to provide a list of tuples - classes
         # along with prediction probabilities
         if self.mode == "classification":
